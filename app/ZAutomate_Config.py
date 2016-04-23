@@ -15,8 +15,8 @@ PLAYER_DRIVER = "alsa"
 
 VALID_CART_TYPES = ['StationID','PSA','Underwriting']
 AUTOMATION_CARTS = [('StationID', 1, 300),
-                    ('StationID+PSA', 15, 300), 
-					('StationID+Underwriting', 30, 300), 
+                    ('StationID+PSA', 15, 300),
+					('StationID+Underwriting', 30, 300),
 					('StationID+PSA', 45, 300)
 				   ]
 
@@ -38,16 +38,6 @@ PlistGenThreshold = 10
 ### How many prior carts to keep in the queue
 PlistHistThreshold = 3
 
-URL_CartLoad = 'http://stream.wsbf.net/wizbif/zautomate_2.0/cartmachine_load.php'
-URL_Log = 'http://stream.wsbf.net/wizbif/zautomate_2.0/zautomate_log.php'
-URL_AutoLoad = 'http://stream.wsbf.net/wizbif/zautomate_2.0/automation_generate_showplist.php'
-URL_AutoStart = 'http://stream.wsbf.net/wizbif/zautomate_2.0/automation_generate_showid.php'
-URL_AutoCart = 'http://stream.wsbf.net/wizbif/zautomate_2.0/automation_add_carts.php'
-URL_StudioSearch = 'http://stream.wsbf.net/wizbif/zautomate_2.0/studio_search.php' ##query
-
-
-File_AutoConf = 'sid.conf'
-
 ### all modules use this
 Root = Tk()
 
@@ -58,9 +48,3 @@ CART_HEIGHT = 75
 
 METER_INTERVAL = .25
 METER_WIDTH = 1250
-
-
-
-
-
-

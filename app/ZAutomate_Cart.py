@@ -7,7 +7,8 @@ PlayerModule = __import__("ZAutomate_Player_"+PLAYER_CLASS)
 import time, os
 from urllib2 import urlopen, URLError
 
-
+### TODO: move the dependent code to DBInterface
+URL_LOG          = 'http://stream.wsbf.net/wizbif/zautomate_2.0/zautomate_log.php'
 
 class Cart():
 
@@ -76,7 +77,7 @@ class Cart():
 
         if AUTOLOG:
             ## self.ID will be libcart primary key for non-song; for libtrack, it will be H199-4 (for example)
-            urlUse = URL_Log + "?cartid=" + str(self.ID)
+            urlUse = URL_LOG + "?cartid=" + str(self.ID)
             print urlUse
             try:
                 resource = urlopen(urlUse)
