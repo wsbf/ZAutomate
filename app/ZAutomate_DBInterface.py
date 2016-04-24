@@ -242,8 +242,6 @@ class DBInterface():
         carts = {}
 
         try:
-            print self.timeStamp() + " :=: DBInterface :: CartMachine_Load() :: Loading the CartMachine"
-
             for t in types:
                 r = requests.get(URL_CARTLOAD, params = {
                     "type": t

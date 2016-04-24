@@ -17,8 +17,6 @@ import time, random
 ###        dual playback bug (esp. with madao) is fixed in GridObj.LeftClick
 ###        one cart stop, then restart: meter is not reset correctly
 ###        underwriting restricted to rightmost column
-
-
 class Carts(Frame):
     ###Master Window Variable
     Master = None
@@ -155,66 +153,51 @@ class Carts(Frame):
             if limit is not -1:
                 carts[t] = carts[t][0:limit]
 
-        ###YATES_COMMENT: Used to keep track of number of carts inserted.
-        ###               numinserted should not exceed ROWS * COLS
+        # total number of carts inserted
         numinserted = 0
 
-        ###YATES_COMMENT: No idea what's going on here.
-        ## lets us keep track of the iterations.
-        ## insert 1 of each, then 3 of each...
+        # number of carts to insert next
+        #
+        # when iterating through the cart types,
+        # each cart type attempts to insert enough
+        # carts to fill the next layer (1 for the corner,
+        # then 3 for around the corner, then 5, and so on)
         toinsert = 1
 
         ## keep iterating until the grid is full
         while numinserted <= self.Rows * self.Cols:
+            numempty = 0
             for t in carts:
+                for i in range(0, toinsert):
 
-                ## insert N carts of each type... 1, 3, 5, 7, 9...
-                inserted = 0
-                while inserted < toinsert:
-
-                    ## load a cart from this cart type
+                    # load a cart from this cart type
                     if len(carts[t]) > 0:
-                        ## pop off coordinates until we find one that's unused
-                        key = progs[t][0]
+                        # pop the first unused coordinate from the progression
+                        key = progs[t].pop(0)
                         while self.Grid[key].HasCart():
-                            progs[t].pop(0)
                             if len(progs[t]) > 0:
-                                key = progs[t][0]
+                                key = progs[t].pop(0)
                             else:
-                                ## all possible positions filled - the whole grid is filled
                                 return
 
-                        ## Actually fill a cart
-                        self.Grid[key].AddCart(carts[t][0])
-                        carts[t].pop(0)
-                        progs[t].pop(0)
-
+                        # add the cart to the grid
+                        self.Grid[key].AddCart(carts[t].pop(0))
                         numinserted += 1
-                        inserted += 1
 
                         ## extra control structure because we are 2 loops in
                         if numinserted == self.Rows * self.Cols:
                             return
-
-                        ###print (str)(ctr) + " | " + (str)(inserted) + " | " + (str)(toinsert)
-
-                    ## no more carts for this category... check the rest. if they're all empty, you're done.
                     else:
-                        numempty = 0
-                        for t in carts:
-                            if len(carts[t]) is 0:
-                                numempty += 1
-                        if numempty == len(carts):
-                            return
-                        ## drop to the next category since this one's empty
-                        break
+                        numempty += 1
+
+            if numempty is len(carts):
+                return
 
             toinsert += 2
 
     def BlankTheGrid(self):
         ###YATES_COMMENT: BlankTheGrid function removes all existing carts from
         ###               the Grid.
-        print "Carts :: BlankTheGrid :: Entered Function"
         for row in range(1, self.Rows+1):
             for col in range(1, self.Cols+1):
                 key = (str)(row)+"x"+(str)(col)
@@ -226,32 +209,25 @@ class Carts(Frame):
                     print "Carts :: BlankTheGrid :: KeyError exception thrown"\
                           + " for key " + (str)(key)
         self.initializeGrid()
-        print "Carts :: BlankTheGrid :: Exiting Function"
-
-    ###==================================
 
     def initializeGrid(self):
-        print "Carts :: InitializeGrid :: Entered Function"
         for row in range(1, self.Rows+1):
             for col in range(1, self.Cols+1):
                 key = (str)(row) + "x" + (str)(col)
                 self.Grid[key] = GridObj(self)
                 self.Grid[key].grid(row = row + 1, column = col - 1)
-        print "Carts :: InitializeGrid :: Entered Function"
 
     def Reload(self, firstRun=False):
         if self.ActiveCart is not None:
             return
-        print "Carts :: Reload :: Entering Reload Function"
+
         if firstRun is False:
             self.BlankTheGrid()
         else:
             self.initializeGrid()
         self.FillTheGrid()
-        print "Carts :: Reload :: Exiting Function"
 
     def EndCallback(self):
-        #print "Ended playback"
         self.ActiveCart.Stop()
         self.ActiveGrid.Reset()
 
