@@ -98,37 +98,60 @@ class Carts(Frame):
         self.Reload(firstRun=True)
 
     def FillTheGrid(self):
-        print "Carts :: FillTheGrid :: Entered Function"
-        ###YATES_COMMENT: These should probably be member variables, but they're
-        ###               Only used here.
-        # limits and shuffle flags for each cart type
+        """Load the grid with carts.
+
+        Since there are four cart types, each type is assigned
+        to a corner of the grid, and the carts in that type expand
+        from that corner. Carts are added one type at a time until
+        the grid is full.
+
+        Typically, since PSAs are the most numerous cart type, they
+        fill middle space not covered by the other types.
+        """
+
+        # configuration for each cart type
         config = {
-            0: { "limits": -1, "shuffle": True },   # PSA
-            1: { "limits": -1, "shuffle": False },  # Underwriting
-            2: { "limits": 9, "shuffle": True },    # Station ID
-            3: { "limits": -1, "shuffle": False }   # Promotion
+            # PSA
+            0: {
+                "corner": (1, 1),
+                "limit": -1,
+                "shuffle": True
+            },
+            # Underwriting
+            1: {
+                "corner": (self.Rows, self.Cols),
+                "limit": -1,
+                "shuffle": False
+            },
+            # Station ID
+            2: {
+                "corner": (1, self.Cols),
+                "limit": 9,
+                "shuffle": True
+            },
+            # Promotion
+            3: {
+                "corner": (self.Rows, 1),
+                "limit": -1,
+                "shuffle": False
+            }
         }
 
-        ## the starting corner coordinates as tuples
-        corners = [ (self.Rows, self.Cols), \
-                    (1, self.Cols), \
-                    (self.Rows, 1), \
-                    (1, 1) ]
-
-        ## progressions to follow for each corner
-        progs = []
-        for corner in corners:
-            progs.append( self.Gridder.GridCorner(corner) )
+        # generate a progression of cells for each corner
+        progs = {}
+        for t in config:
+            progs[t] = self.Gridder.GridCorner(config[t]["corner"])
 
         # get a dictonary of carts for each cart type
         DBI = DBInterface()
         carts = DBI.CartMachine_Load()
 
+        # apply limiting and shuffling to each cart type
         for t in carts:
             if config[t]["shuffle"] is True:
                 random.shuffle(carts[t])
 
-            limit = config[t]["limits"]
+            limit = config[t]["limit"]
             if limit is not -1:
                 carts[t] = carts[t][0:limit]
 
@@ -171,27 +194,22 @@ class Carts(Frame):
 
                         ## extra control structure because we are 2 loops in
                         if numinserted == self.Rows * self.Cols:
-                            #print "ENDING - grid full"
                             return
 
                         ###print (str)(ctr) + " | " + (str)(inserted) + " | " + (str)(toinsert)
 
                     ## no more carts for this category... check the rest. if they're all empty, you're done.
                     else:
-                        #print types[ctr] + " is empty..."
                         numempty = 0
                         for t in carts:
                             if len(carts[t]) is 0:
                                 numempty += 1
                         if numempty == len(carts):
                             return
-                        #print "Ran out of carts of type "+types[ctr]
                         ## drop to the next category since this one's empty
                         break
-###                print "FillTheGrid :: inserted "+(str)(inserted)+" of type "+types[ctr]
 
             toinsert += 2
-        print "Carts :: FillTheGrid :: Exiting Function"
 
     def BlankTheGrid(self):
         ###YATES_COMMENT: BlankTheGrid function removes all existing carts from

@@ -253,8 +253,10 @@ class DBInterface():
                 carts[t] = []
 
                 for c in carts_res:
-                    # pathname = LIBRARY_PREFIX + 'carts' + PLATFORM_DELIMITER + c["filename"]
-                    pathname = "/home/bent/Music/Herbie Hancock/Thrust/03 - Butterfly.mp3"
+                    pathname = LIBRARY_PREFIX + 'carts' + PLATFORM_DELIMITER + c["filename"]
+
+                    # TODO: mock ZAutoLib in development
+                    pathname = "test/test.mp3"
 
                     cart_tmp = Cart(c["cartID"], c["title"], c["issuer"], c["type"], pathname)
 
