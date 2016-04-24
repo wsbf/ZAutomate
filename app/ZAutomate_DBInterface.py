@@ -1,13 +1,14 @@
 from ZAutomate_Config import *
 from ZAutomate_Cart import *
 import os, urllib
+import requests
 
 ## GLOBALS USED
 ##    LIBRARY_PREFIX     '/media/ZAL/'
 ##    PLATFORM_DELIMITER = '/'
 
 ### URLs for the web interface
-URL_CARTLOAD     = 'http://stream.wsbf.net/wizbif/zautomate_2.0/cartmachine_load.php'
+URL_CARTLOAD     = 'https://dev.wsbf.net/api/zautomate/cartmachine_load.php'
 URL_AUTOLOAD     = 'http://stream.wsbf.net/wizbif/zautomate_2.0/automation_generate_showplist.php'
 URL_AUTOSTART    = 'http://stream.wsbf.net/wizbif/zautomate_2.0/automation_generate_showid.php'
 URL_AUTOCART     = 'http://stream.wsbf.net/wizbif/zautomate_2.0/automation_add_carts.php'
@@ -19,11 +20,10 @@ FILE_AUTOCONF = 'sid.conf'
 class DBInterface():
     ShowID = -1
 
-
     def __init__(self):
-
         pass
 
+    # TODO: is this method necessary?
     def LogAppend(self, text):
         print text
 
@@ -236,51 +236,36 @@ class DBInterface():
                 print self.timeStamp() + " :=: DBInterface :: Playlist_Enqueue_Next :: cart file " + filename + " does not exist"
         return ReturnList
 
-    ### loads one type of cart at a time
-    def CartMachine_Load(self, cartType):
-        cartArr = []
+    ### load a dictionary of cart types to cart arrays
+    def CartMachine_Load(self):
+        types = [0, 1, 2, 3]
+        carts = {}
+
         try:
-            resource = urlopen(URL_CARTLOAD + "?type=" + (str)(cartType))
-            ###YATES_COMMENT: What can cartType be?
-            ###YATES_ANSWER:
-            ### MySQL TinyInt(3) --- 0 for PSA
-            ###                             1 for Underwriting
-            ###                             2 for StationID
-            ###                             3 for Promos (Fall Fest Promo?)
-            ###                             4 for NewsBombs
-            ###                             5 for SignOn Cart
-            lines = resource.read().split("\n")
-            ###YATES_COMMENT: Split results in the following array
-            ###                    fd[0] = cartID
-            ###                    fd[1] = start_date
-            ###                    fd[2] = end_date
-            ###                    fd[3] = play_mask
-            ###                    fd[4] = title
-            ###                    fd[5] = issuer
-            ###                    fd[6] = cart_typeID
-            ###                    fd[7] = filename
             print self.timeStamp() + " :=: DBInterface :: CartMachine_Load() :: Loading the CartMachine"
-            for line in lines:
-                if len(line) is 0:
-                    continue
 
-                fd = line.split(", ")
+            for t in types:
+                r = requests.get(URL_CARTLOAD, params = {
+                    "type": t
+                })
 
-                pathname = LIBRARY_PREFIX + 'carts' + PLATFORM_DELIMITER + fd[7]
+                carts_res = r.json()
+                carts[t] = []
 
-                thisCart = Cart(fd[0], fd[4], fd[5], fd[6], pathname) # 0 4 5 6
-                ###def __init__(self, cid, title, issuer, cartType, filename):
-                ###YATES_COMMENT This looks wrong.  I think it should be.
-                ###thisCart = cart(fd[0], fd[5], fd[4], fd[6], pathname)
-                if thisCart.Verify():
-                ###Verify ensures that the file at the absolute path exists
-                    cartArr.append(thisCart)
+                for c in carts_res:
+                    # pathname = LIBRARY_PREFIX + 'carts' + PLATFORM_DELIMITER + c["filename"]
+                    pathname = "/home/bent/Music/Herbie Hancock/Thrust/03 - Butterfly.mp3"
+
+                    cart_tmp = Cart(c["cartID"], c["title"], c["issuer"], c["type"], pathname)
+
+                    # verify that this file exists
+                    if ( cart_tmp.Verify() ):
+                        carts[t].append(cart_tmp)
+
         except URLError, Error:
             print self.timeStamp() + " :=: Error: Could not fetch carts."
-            print self.timeStamp() + " :=: \turl: " + (str)(URL_CARTLOAD) + "?type=" + (str)(cartType)
-        print self.timeStamp() + " :=: DBInterface :: CartMachine_Load() :: Returning Array of " +\
-              cartType + " with size = " + (str)(len(cartArr))
-        return cartArr
+
+        return carts
 
     def Studio_Search(self, query):
         query = urllib.quote_plus(query)
@@ -339,7 +324,6 @@ class DBInterface():
                 ReturnList.append(thiscart)
 
         return ReturnList
-
 
     def timeStamp(self):
         return time.asctime(time.localtime(time.time()))

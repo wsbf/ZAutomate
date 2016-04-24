@@ -54,7 +54,6 @@ class Cart():
         #return os.path.isfile(self.Filename)
         return self.Sound is not None
 
-
     def __del__(self):
         ###self.Sound.destroy()
         ##print self.timeStamp() + " :=: Destructor for title: ",
@@ -62,10 +61,8 @@ class Cart():
         pass
 
     def MeterFeeder(self):
-        ## 4-tuple as follows!
         ##return ( 0, self.Sound.length(), self.Title, self.Issuer, self.ID, self.Type )
         return ( self.Sound.time_elapsed(), self.Sound.length(), self.Title, self.Issuer, self.ID, self.cartType )
-
 
     def Start(self, callback=None):
         print self.timeStamp() + " :=: Cart :: Start :: " + self.Title + " :: " + self.Issuer
@@ -75,6 +72,7 @@ class Cart():
             print self.timeStamp() + " :=: Cart :: Start :: ERROR :: could not play the file " + self.Filename
             return
 
+        ### TODO: move to DBInterface, have this code called from other classes
         if AUTOLOG:
             ## self.ID will be libcart primary key for non-song; for libtrack, it will be H199-4 (for example)
             urlUse = URL_LOG + "?cartid=" + str(self.ID)
