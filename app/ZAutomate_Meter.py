@@ -1,7 +1,6 @@
 import thread
 import time
 from Tkinter import Canvas
-from ZAutomate_Config import PLAYER_CLASS
 
 METER_INTERVAL = 0.25
 
@@ -133,32 +132,9 @@ class Meter(Canvas):
     def CheckCallback(self):
         lastTimePosition = -1
         while self.KeepGoing is True:
-###            print self.GetDataFunc()
 ###            print thread.get_ident()
-            tple = self.GetDataFunc()
-#            print "Meter :: CheckCallBack :: Tuple = " + (str)(tple)
-            self.Change(tple)
-
-            if PLAYER_CLASS is 'snack':
-#                print lastTimePosition,
-#                print " - ",
-#                print tple[0],
-#                print " - ",
-#                print tple[1],
-#                print " - ",
-#                print tple[1] - tple[0]
-
-                if lastTimePosition > tple[0] and tple[0] == 0.0:
-#                    print "Meter :: COMPLETION CONDITION"
-
-                    ## this lets the last sample(-ish) finish out
-                    time.sleep(METER_INTERVAL)
-                    lastTimePosition = -1
-                    self.TransitionFunc()
-#                    print "Meter :: Thread exiting"
-                    thread.exit()
-                else:
-                    lastTimePosition = tple[0]
+            data = self.GetDataFunc()
+            self.Change(data)
             time.sleep(METER_INTERVAL)
 
     def Reset(self):

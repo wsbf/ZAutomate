@@ -19,7 +19,6 @@ class Player():
         self.Madrsc = mad_file
         self.Length = self.Madrsc.total_time()
         self.FileName = filename
-        pass
 
     def length(self):
         return self.Length
@@ -68,9 +67,8 @@ class Player():
         except:
             print self.timeStamp() + " :=: Player_madao :: play :: Could not start new play thread"
 
-
     def stop(self):
-        if not(self.isplaying()):
+        if not self.isplaying():
             print self.timeStamp() + " :=: Player :: stop :: Tried to stop, but not playing"
             return
         self.KeepGoing = False
@@ -89,7 +87,6 @@ class Player():
             print self.timeStamp() + " :=: Player_Madao :: SeekToFront :: Couldn't open file " + \
                   (str)(self.FileName) + "\nIn the immortal words of Zach," +\
                   "I hope you're debugging, Yates"
-
 
     def timeStamp(self):
         return time.asctime(time.localtime(time.time()))

@@ -1,9 +1,6 @@
 import time
 import mad
-from ZAutomate_Config import PLAYER_CLASS
-
-print "\t---Using Player "+PLAYER_CLASS+"---"
-PlayerModule = __import__("ZAutomate_Player_"+PLAYER_CLASS)
+from ZAutomate_Player_madao import Player
 
 class Cart():
     Index = None
@@ -27,7 +24,7 @@ class Cart():
         except IOError:
             print self.timeStamp() + " :=: Cart :: __init__ :: Error :: Mad.Madfile(" + (str)(filename) +") failed!"
         if tempFile is not None:
-            self.Sound = PlayerModule.Player(tempFile, filename)
+            self.Sound = Player(tempFile, filename)
         else:
             self.Sound = None
         self.ID = cid

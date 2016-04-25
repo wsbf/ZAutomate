@@ -1,8 +1,9 @@
 import os
 import time
 import requests
-from ZAutomate_Config import LIBRARY_PREFIX
 from ZAutomate_Cart import Cart
+
+LIBRARY_PREFIX = "/media/ZAL/"
 
 ### URLs for the web interface
 URL_CARTLOAD = "https://dev.wsbf.net/api/zautomate/cartmachine_load.php"
@@ -105,7 +106,7 @@ class DBInterface():
             res = requests.get(URL_AUTOLOAD, params={"showid": self.ShowID})
             show = res.json()
 
-            self.showID = show["showID"]
+            self.ShowID = show["showID"]
 
             print "DBInterface :: Get_Next_Playlist() :: Enqueueing new showID " + (str)(self.ShowID)
 
