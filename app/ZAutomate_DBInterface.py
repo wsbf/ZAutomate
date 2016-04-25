@@ -10,9 +10,13 @@ URL_AUTOLOAD = "https://dev.wsbf.net/api/zautomate/automation_generate_showplist
 URL_AUTOSTART = "https://dev.wsbf.net/api/zautomate/automation_generate_showid.php"
 URL_AUTOCART = "https://dev.wsbf.net/api/zautomate/automation_add_carts.php"
 URL_STUDIOSEARCH = "https://dev.wsbf.net/api/zautomate/studio_search.php"
+URL_LOG = "https://dev.wsbf.net/api/zautomate/zautomate_log.php"
 
 ### sid.conf stores the previous/current showID
 FILE_AUTOCONF = "sid.conf"
+
+### enable logging
+LOGGING = True
 
 class DBInterface():
     ShowID = -1
@@ -172,6 +176,17 @@ class DBInterface():
             print "Error: Could not fetch search results."
 
         return results
+
+    def Logbook_Log(self, cartID):
+        if LOGGING is False:
+            return
+
+        ## id will be libcart primary key for non-song; for libtrack, it will be H199-4 (for example)
+        try:
+            res = requests.post(URL_LOG, params={"cartid": cartID})
+            print res.text
+        except:
+            print self.timeStamp() + " :=: Caught error: Could not access cart logger."
 
     def timeStamp(self):
         return time.asctime(time.localtime(time.time()))

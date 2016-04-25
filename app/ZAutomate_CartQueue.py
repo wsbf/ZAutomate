@@ -92,8 +92,7 @@ class CartQueue():
             self.Arr[0].Stop()
             print self.timeStamp() + " :=: CQ :: Dequeue :: Dequeuing " + self.Arr[0].PrintCart()
             self.PlayedArr.append(self.Arr.pop(0))
-            if self.Meter is not None:
-                self.Meter.Reset()
+            self.Meter.Reset()
         except IndexError:
             print self.timeStamp() + " :=: Closing... queue was empty... I hope you're debugging, Zach..."
         print self.timeStamp() + " :=: CQ :: Dequeue :: Leaving Dequeue..."
@@ -474,22 +473,21 @@ class CartQueue():
             print self.timeStamp() + " :=: CQ :: Start :: Calling GenStartTimes()"
             self.GenStartTimes(0)
 
-        ###If meter is not set, lets set the meter.
         try:
-            if self.Meter is not None:
-                print self.timeStamp() + " :=: CQ :: Start :: Calling Meter.Start()"
-                self.Meter.Start()
-            print self.timeStamp() + " :=: \t" + self.Arr[0].Title + " by " + self.Arr[0].Issuer
-            ###Start the 0th Cart, passing Transition callback.
+            self.Meter.Start()
             self.Arr[0].Start(self.Transition)
+            DBInterface().Logbook_Log(self.Arr[0].ID)
+
+            print self.timeStamp() + " :=: \t" + self.Arr[0].Title + " by " + self.Arr[0].Issuer
         except IndexError:
             print self.timeStamp() + " :=: CQ :: Start :: ERROR :: Queue is empty!!!"
             return
+
         ###If called by button click, InsertAllCarts under a new thread.
         if click is True:
             print self.timeStamp() + " :=: CQ :: Start :: Starting new InsertAllCarts() Thread"
             thread.start_new_thread(self.InsertAllCarts, ( ) )
-        ###Update the UI
+
         self.UIUpdate()
 
     def StopSoon(self):

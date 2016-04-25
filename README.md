@@ -19,11 +19,11 @@ pylint **/*.py > lint.out
 
 ## TODO
 
+- separate Logbook_Log into log_cart and log_track
 - create separate classes for carts and tracks
 - resolve lint errors
-- Migrate DBInterface to use the new PHP API
 - Automation stops playing PSAs after a long time?
-- Automation should only play songs currently in rotation
 - Cart Machine buttons must be pressed 2-3 times to play
 - Large queries in DJ Studio interrupt audio streaming (use multiprocess)
 - Consider combining the three modules into one window
+- sort through the three player modules
