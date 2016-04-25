@@ -146,20 +146,17 @@ class Studio(Frame):
 
     def SearchInternal(self):
         query = self.Entry.get()
-        #print "Searching for \"" + query + "\" -",
 
-        dbi = DBInterface()
-        self.SearchCarts = dbi.Studio_Search(query)
+        if len(query) >= 3:
+            dbi = DBInterface()
+            self.SearchCarts = dbi.Studio_Search(query)
 
-        ## fill the DualBox with the search results
-        arr = []
-        for cart in self.SearchCarts:
-            temp = cart.MeterFeeder()
-            arr.append((temp[2], temp[3])) ## was 2,3    5
-        self.DualBox.TupleFill(arr)
-
-        #print len(self.SearchCarts),
-        #print "valid carts found."
+            ## fill the DualBox with the search results
+            arr = []
+            for cart in self.SearchCarts:
+                temp = cart.MeterFeeder()
+                arr.append((temp[2], temp[3])) ## was 2,3    5
+            self.DualBox.TupleFill(arr)
 
         thread.exit()
 

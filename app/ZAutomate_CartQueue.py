@@ -1,7 +1,7 @@
 import datetime
 import thread
 import time
-from ZAutomate_Config import METER_WIDTH, PlistGenThreshold, PlistHistThreshold
+from ZAutomate_Config import METER_WIDTH
 from ZAutomate_Meter import Meter
 from ZAutomate_DBInterface import DBInterface
 
@@ -22,6 +22,11 @@ AUTOMATION_CARTS = [
     (['StationID', 'Underwriting'], 30, 300),
 	(['StationID', 'PSA'], 45, 300)
 ]
+
+### Automation will add to its playlist when there are this many or fewer tracks to go
+PlistGenThreshold = 10
+### How many prior carts to keep in the queue
+PlistHistThreshold = 3
 
 ## This class is only used by ZA_Automation
 METER_WIDTH = 780

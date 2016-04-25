@@ -25,11 +25,6 @@ SizeX = 800
 SizeY = 600
 WinGeometry = (str)(SizeX)+"x"+(str)(SizeY)+"+0+0" #SIZEXxSIZEY+XOFFSET+YOFFSET
 
-### Automation will add to its playlist when there are this many or fewer tracks to go
-PlistGenThreshold = 10
-### How many prior carts to keep in the queue
-PlistHistThreshold = 3
-
 ### all modules use this
 Root = Tk()
 

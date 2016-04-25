@@ -8,8 +8,8 @@ from ZAutomate_DBInterface import DBInterface
 class Automation():
     Master = None
 
-    CQ = None ## CartQueue class...
-    DBI = None ## DBInterface class...
+    CartQueue = None
+    DBInterface = None
 
     # instantiate everything
     def __init__(self, master, width):
@@ -43,15 +43,15 @@ class Automation():
         ###                    self.UIUpdate sets the callback function
         ###                    for whenever the CartQueue is filled, refilled, updated,
         ###                    started, etc.
-        self.CQ = CartQueue(self.Master, width, self.UIUpdate)
+        self.CartQueue = CartQueue(self.Master, width, self.UIUpdate)
 
-        ###YATES_COMMENT: Instantiates the DBInterface class
-        self.DBI = DBInterface()
+        self.DBInterface = DBInterface()
+
         ###YATES_COMMENT: Tries to restore the ShowID from previously playing automation.
         ###                    Does so by trying to read from sid.conf.  If fails, then
         ###                    DBInterface Rewinds the playlist date and tries for a
         ###                    new show.
-        self.DBI.ShowID_Restore()
+        self.DBInterface.ShowID_Restore()
 
         ###YATES_COMMENT: Pretty sure the next 20 or so lines come from Tkinter
 
@@ -76,7 +76,7 @@ class Automation():
         PlistFr.grid(row=4, column=0, columnspan=4)
 
         ###YATES_COMMENT: Initialize the CartQueue with stuff to play.
-        self.CQ.InitialFill()
+        self.CartQueue.InitialFill()
 
     ###YATES_COMMENT: Event Handler for scrolling through the three Windows.
     def ScrollHandler(self, *args):
@@ -103,14 +103,14 @@ class Automation():
     ###YATES_COMMENT: Function to Start playing Automation...
     def AutoStart(self, Quiet=True):
         print "Automation :: AutoStart :: Entered Function"
-        self.CQ.Start(True)
+        self.CartQueue.Start(True)
         if Quiet is False:
             print 'Automation starting...'
 
     ###YATES_COMMENT: Button to Stop playing Automation after this song.
     def AutoStop(self, Quiet=True):
         print "Automation :: AutoStop :: Entered Function"
-        self.CQ.StopSoon()
+        self.CartQueue.StopSoon()
         if Quiet is False:
             print 'Automation will stop after this track.'
 
@@ -125,8 +125,8 @@ class Automation():
         ###                    Cart and plays the next cart.
         ###                    If stopped, we clear out the queue, updated UI and
         ###                    wait to get a new one
-        print "Automationp :: AutoStopNow :: Calling CQ.Transition"
-        self.CQ.Transition()
+        print "Automationp :: AutoStopNow :: Calling CartQueue.Transition"
+        self.CartQueue.Transition()
 
     # callback: when anything happens in CartQueue, run this to update the UI's state
     ###YATES_COMMENT: This is the callback fucntion from the CartQueue that updates
@@ -142,7 +142,7 @@ class Automation():
         self.TrackBox.delete(0, END)
         self.ArtistBox.delete(0, END)
         ###YATES_COMMENT: Appends the CueTime, TrackName, ArtistName to each of the Boxes.
-        for item in self.CQ.GetArray():
+        for item in self.CartQueue.GetArray():
             self.CueBox.insert(END, item[0])
             self.TrackBox.insert(END, item[1])
             self.ArtistBox.insert(END, item[2])
@@ -153,7 +153,7 @@ class Automation():
         ###                    pressing stop and the track ending.  So next time IsStopping is true,
         ###                    set the ButtonContent to start, so next time the button is pushed
         ###                    the ButtonHandler will properly start the music.
-        if self.CQ.IsStopping():
+        if self.CartQueue.IsStopping():
             self.ButtonContent.set('  START    ')
             self.Button.config(bg='#008500', highlightbackground='#008500')
         ###What is the state of IsStopping after this?  Shouldn't IsStopping be
@@ -161,10 +161,8 @@ class Automation():
 
     # called at close program; cleans everything up
     def Bail(self):
-        ##print "Automation :: Bail called"
-
-        self.CQ.Dequeue()
-        self.DBI.ShowID_Save()
+        self.CartQueue.Dequeue()
+        self.DBInterface.ShowID_Save()
 
         self.Master.destroy()
 
