@@ -21,10 +21,6 @@ class DBInterface():
     def __init__(self):
         pass
 
-    # TODO: is this method necessary?
-    def LogAppend(self, text):
-        print text
-
     ### try to pull the show id we last used from the config file.
     def ShowID_Restore(self):
         if self.ShowID is -1:
@@ -34,7 +30,7 @@ class DBInterface():
                 try:
                     self.ShowID = (int)(f.read())
                 except ValueError:
-                    self.LogAppend("Error: Prior show ID is malformed.")
+                    print "Error: Prior show ID is malformed."
 
             ### otherwise, step back in time here to get self.ShowID without hardset
             else:
@@ -49,7 +45,7 @@ class DBInterface():
             })
             self.ShowID = r.json()
         except:
-            self.LogAppend("Error: Could not fetch starting show ID.")
+            print "Error: Could not fetch starting show ID."
 
     def ShowID_Save(self):
         f = open(FILE_AUTOCONF, 'w')
@@ -115,8 +111,8 @@ class DBInterface():
                 resource = urllib.urlopen(url)
                 lines = resource.read().split("\n")
             except:
-                self.LogAppend("Error: Could not fetch playlist.")
-                self.LogAppend("url: "+url)
+                print "Error: Could not fetch playlist."
+                print "url: " + url
 
         ###YATES_COMMENT: I have no idea what this does.  I assume it takes the
         ###                    characters 7:Strlen of line[0] and casts it as an int.
@@ -132,7 +128,7 @@ class DBInterface():
             print self.timeStamp() + " :=: DBInterface :: Playlist_Next_Enqueue :: new showid = " + str(lines[0][7:])
         print self.timeStamp() + " :=: DBInterface :: Playlist_Next_Enqueue :: new showid = " + str(lines[0][7:])
         lines.pop(0)
-        self.LogAppend( "DBInterface :: Playlist_Enqueue_Next() :: Enqueueing new showID "+(str)(self.ShowID) )
+        print "DBInterface :: Playlist_Enqueue_Next() :: Enqueueing new showID " + (str)(self.ShowID)
         print self.timeStamp() + " :=: DBInterface :: Playlist_Enqueue_Next() :: Entering the enqueue loop"
         for line in lines:
             if(line is ""):
@@ -142,8 +138,8 @@ class DBInterface():
             try:
                 filename = urllib.unquote_plus(fd[8])
             except IndexError:
-                self.LogAppend("DBInterface :: Playlist_Enqueue_Next() :: Index Out Of Bounds Error")
-                self.LogAppend("DBInterface :: Playlist_Enqueue_Next() :: line = " + (str)(line))
+                print "DBInterface :: Playlist_Enqueue_Next() :: Index Out Of Bounds Error"
+                print "DBInterface :: Playlist_Enqueue_Next() :: line = " + (str)(line)
 
             ###YATES_COMMENT: Python URLLib function call.
             ###  See http://docs.python.org/library/urllib.html#urllib.unquote_plus
@@ -217,7 +213,7 @@ class DBInterface():
             lines = resource.read().split("\n")
 
         except:
-            self.LogAppend("Error: Could not fetch search results.")
+            print "Error: Could not fetch search results."
 
         for line in lines:
             if len(line) is 0:
