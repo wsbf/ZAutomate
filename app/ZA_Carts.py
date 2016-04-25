@@ -2,11 +2,13 @@
 
 import random
 from Tkinter import Frame, Label, N, Button
-from ZAutomate_Config import CARTS_ROWS, CARTS_COLS, METER_WIDTH
+from ZAutomate_Config import CARTS_ROWS, CARTS_COLS
 from ZAutomate_DBInterface import DBInterface
 from ZAutomate_Gridder import Gridder
 from ZAutomate_GridObj import GridObj
 from ZAutomate_Meter import Meter
+
+METER_WIDTH = 1250
 
 ###    TO DO
 ###        hourly reload - add to tkinter event loop? (call Carts.Reload)

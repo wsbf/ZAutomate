@@ -2,7 +2,7 @@
 
 import thread
 from Tkinter import Frame, Label, BooleanVar, SUNKEN, NW, Radiobutton, Entry, Button, S
-from ZAutomate_Config import METER_WIDTH, CARTS_ROWS, CARTS_COLS, Root
+from ZAutomate_Config import CARTS_ROWS, CARTS_COLS, Root
 from ZAutomate_GridObj import GridObj
 from ZAutomate_Meter import Meter
 from ZAutomate_DBInterface import DBInterface

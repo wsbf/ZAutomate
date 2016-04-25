@@ -1,18 +1,18 @@
 import os
 import time
 import requests
-from ZAutomate_Config import LIBRARY_PREFIX, PLATFORM_DELIMITER
+from ZAutomate_Config import LIBRARY_PREFIX
 from ZAutomate_Cart import Cart
 
 ### URLs for the web interface
-URL_CARTLOAD     = 'https://dev.wsbf.net/api/zautomate/cartmachine_load.php'
-URL_AUTOLOAD     = 'https://dev.wsbf.net/api/zautomate/automation_generate_showplist.php'
-URL_AUTOSTART    = 'https://dev.wsbf.net/api/zautomate/automation_generate_showid.php'
-URL_AUTOCART     = 'https://dev.wsbf.net/api/zautomate/automation_add_carts.php'
-URL_STUDIOSEARCH = 'https://dev.wsbf.net/api/zautomate/studio_search.php'
+URL_CARTLOAD = "https://dev.wsbf.net/api/zautomate/cartmachine_load.php"
+URL_AUTOLOAD = "https://dev.wsbf.net/api/zautomate/automation_generate_showplist.php"
+URL_AUTOSTART = "https://dev.wsbf.net/api/zautomate/automation_generate_showid.php"
+URL_AUTOCART = "https://dev.wsbf.net/api/zautomate/automation_add_carts.php"
+URL_STUDIOSEARCH = "https://dev.wsbf.net/api/zautomate/studio_search.php"
 
 ### sid.conf stores the previous/current showID
-FILE_AUTOCONF = 'sid.conf'
+FILE_AUTOCONF = "sid.conf"
 
 class DBInterface():
     ShowID = -1
@@ -24,7 +24,7 @@ class DBInterface():
     def ShowID_Restore(self):
         if self.ShowID is -1:
             if os.access(FILE_AUTOCONF, os.R_OK) is True:
-                f = open(FILE_AUTOCONF, 'r')
+                f = open(FILE_AUTOCONF, "r")
 
                 try:
                     self.ShowID = (int)(f.read())
@@ -45,7 +45,7 @@ class DBInterface():
             print "Error: Could not fetch starting show ID."
 
     def ShowID_Save(self):
-        f = open(FILE_AUTOCONF, 'w')
+        f = open(FILE_AUTOCONF, "w")
         f.write((str)(self.ShowID + 1))
         f.close()
 

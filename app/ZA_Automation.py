@@ -1,9 +1,16 @@
 #!/usr/bin/env python
 
 from Tkinter import Label, StringVar, Button, Frame, SUNKEN, CENTER, Scrollbar, Listbox, END
-from ZAutomate_Config import Root, WinGeometry, SizeX
+from ZAutomate_Config import Root
 from ZAutomate_CartQueue import CartQueue
 from ZAutomate_DBInterface import DBInterface
+
+SIZE_X = 800
+SIZE_Y = 600
+OFFSET_X = 0
+OFFSET_Y = 0
+WINDOW_PARAMS = (str)(SIZE_X) + "x" + (str)(SIZE_Y) \
+        + "+" + (str)(OFFSET_X) + "+" + (str)(OFFSET_Y)
 
 class Automation():
     Master = None
@@ -166,10 +173,8 @@ class Automation():
 
         self.Master.destroy()
 
-### end of class
-
-Root.geometry(WinGeometry)
-Auto = Automation(Root, SizeX) #SizeX-50
+Root.geometry(WINDOW_PARAMS)
+Auto = Automation(Root, SIZE_X)
 Root.protocol("WM_DELETE_WINDOW", Auto.Bail)
 Root.title("ZAutomate :: Automation")
 Root.mainloop()

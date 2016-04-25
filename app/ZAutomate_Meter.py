@@ -1,7 +1,9 @@
 import thread
 import time
 from Tkinter import Canvas
-from ZAutomate_Config import PLAYER_CLASS, METER_INTERVAL
+from ZAutomate_Config import PLAYER_CLASS
+
+METER_INTERVAL = 0.25
 
 class Meter(Canvas):
     Value = 0

@@ -1,7 +1,6 @@
 import datetime
 import thread
 import time
-from ZAutomate_Config import METER_WIDTH
 from ZAutomate_Meter import Meter
 from ZAutomate_DBInterface import DBInterface
 
@@ -27,10 +26,6 @@ AUTOMATION_CARTS = [
 PlistGenThreshold = 10
 ### How many prior carts to keep in the queue
 PlistHistThreshold = 3
-
-## This class is only used by ZA_Automation
-METER_WIDTH = 780
-GUI = True    # turns off the Meter
 
 class CartQueue():
 
@@ -62,12 +57,12 @@ class CartQueue():
         ###YATES_COMMENT: What/Where is PlistHistThreshold?
         ###YATES_ANSWER : ZAutomate_Config.py, currently set to 3;
         self.HistLimit = PlistHistThreshold # GLOBAL
-        if GUI:
-            ###YATES_COMMENT: What/Where is MeterFeeder?
-            ###YATES_ANSWER: It's a Function or Macro, defined at the bottom,
-            ###                  it returns self.Arr[0].MeterFeeder();
-            self.Meter = Meter(master,width-10, self.MeterFeeder, self.Transition)
-            self.Meter.grid(row=1,column=0,columnspan=4)
+
+        ###YATES_COMMENT: What/Where is MeterFeeder?
+        ###YATES_ANSWER: It's a Function or Macro, defined at the bottom,
+        ###                  it returns self.Arr[0].MeterFeeder();
+        self.Meter = Meter(master,width-10, self.MeterFeeder, self.Transition)
+        self.Meter.grid(row=1,column=0,columnspan=4)
 
     ###YATES_COMMENT: Extend takes an array of Carts and appends it to the end
     ###                    of self.Arr.  cartArr's type code must be the same as Arr's
