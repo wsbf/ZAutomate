@@ -1,11 +1,9 @@
-from ZAutomate_Config import *
-from ZAutomate_Cart import *
-import os, urllib
+import os
+import time
+import urllib
 import requests
-
-## GLOBALS USED
-##    LIBRARY_PREFIX     '/media/ZAL/'
-##    PLATFORM_DELIMITER = '/'
+from ZAutomate_Config import LIBRARY_PREFIX, PLATFORM_DELIMITER
+from ZAutomate_Cart import Cart
 
 ### URLs for the web interface
 URL_CARTLOAD     = 'https://dev.wsbf.net/api/zautomate/cartmachine_load.php'
@@ -49,8 +47,8 @@ class DBInterface():
             r = requests.get(URL_AUTOSTART, params = {
                 "showid": self.ShowID
             })
-            self.ShoWID = r.json()
-        except URLError, Error:
+            self.ShowID = r.json()
+        except:
             self.LogAppend("Error: Could not fetch starting show ID.")
 
     def ShowID_Save(self):
@@ -93,7 +91,7 @@ class DBInterface():
                     return cart
                 else:
                     count += 1
-        except URLError, Error:
+        except:
             print self.timeStamp() + " :=: Error: Could not fetch cart."
 
         return None
@@ -114,9 +112,9 @@ class DBInterface():
             print self.timeStamp() + " :=: DBInterface :: Playlist_Next_Enqueue() :: calling automation_generate_showplist.php"
             url = URL_AUTOLOAD + "?sid=" + (str)(self.ShowID)
             try:
-                resource = urlopen(url)
+                resource = urllib.urlopen(url)
                 lines = resource.read().split("\n")
-            except URLError, Error:
+            except:
                 self.LogAppend("Error: Could not fetch playlist.")
                 self.LogAppend("url: "+url)
 
@@ -194,7 +192,7 @@ class DBInterface():
                     if ( cart_tmp.Verify() ):
                         carts[t].append(cart_tmp)
 
-        except URLError, Error:
+        except:
             print self.timeStamp() + " :=: Error: Could not fetch carts."
 
         return carts
@@ -212,13 +210,13 @@ class DBInterface():
         ###YATES_COMMENT: Turns a string into an HTML Friendly String.
         ReturnList = []
         try:
-            resource = urlopen(URL_STUDIOSEARCH + "?query=" + (str)(query))
+            resource = urllib.urlopen(URL_STUDIOSEARCH + "?query=" + (str)(query))
             ###YATES_COMMENT: Returns an array of matches with the form:
             ###Line[i][]={album_code, track_num, genre, rotation_bin,
             ###           artist_name, track_name, album_name, label, file_name}
             lines = resource.read().split("\n")
 
-        except URLError, Error:
+        except:
             self.LogAppend("Error: Could not fetch search results.")
 
         for line in lines:

@@ -1,11 +1,10 @@
-from ZAutomate_Config import *
+import time
+import urllib2
 import mad
+from ZAutomate_Config import PLAYER_CLASS, AUTOLOG
 
 print "\t---Using Player "+PLAYER_CLASS+"---"
 PlayerModule = __import__("ZAutomate_Player_"+PLAYER_CLASS)
-
-import time, os
-from urllib2 import urlopen, URLError
 
 ### TODO: move the dependent code to DBInterface
 URL_LOG          = 'http://stream.wsbf.net/wizbif/zautomate_2.0/zautomate_log.php'
@@ -81,11 +80,11 @@ class Cart():
             urlUse = URL_LOG + "?cartid=" + str(self.ID)
             print urlUse
             try:
-                resource = urlopen(urlUse)
+                resource = urllib2.urlopen(urlUse)
                 lines = resource.read().split("\n")
                 for line in lines:
                     print line
-            except URLError, Error:
+            except:
                 print self.timeStamp() + " :=: Caught error: Could not access cart logger."
 
     def Stop(self):

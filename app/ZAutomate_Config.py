@@ -1,5 +1,4 @@
-from Tkinter import *
-
+from Tkinter import Tk
 
 LIBRARY_PREFIX = '/media/ZAL/' 	## '/media/DATA_NEW/ZAL/'
 PLATFORM_DELIMITER = '/' 		### should be \ on win32, / on *nix
@@ -33,7 +32,6 @@ PlistHistThreshold = 3
 
 ### all modules use this
 Root = Tk()
-
 
 CART_WIDTH = 200
 CART_MARGIN = 10

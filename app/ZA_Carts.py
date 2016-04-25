@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 
-from ZAutomate_Config import *
-from ZAutomate_GridObj import *
-from ZAutomate_Meter import *
-from ZAutomate_DBInterface import *
-
-from ZAutomate_Gridder import *
-import time, random
-    ## ROW COL maxROW maxCOL
+import random
+from Tkinter import Frame, Label, N, Button
+from ZAutomate_Config import CARTS_ROWS, CARTS_COLS, METER_WIDTH
+from ZAutomate_DBInterface import DBInterface
+from ZAutomate_Gridder import Gridder
+from ZAutomate_GridObj import GridObj
+from ZAutomate_Meter import Meter
 
 ###    TO DO
 ###        hourly reload - add to tkinter event loop? (call Carts.Reload)

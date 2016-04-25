@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 
-from ZAutomate_CartQueue import *
-from ZAutomate_DBInterface import *
-
-from Tkinter import *
-import sys, urllib, time, os
+from Tkinter import Label, StringVar, Button, Frame, SUNKEN, CENTER, Scrollbar, Listbox, END
+from ZAutomate_Config import Root, WinGeometry, SizeX
+from ZAutomate_CartQueue import CartQueue
+from ZAutomate_DBInterface import DBInterface
 
 class Automation():
     Master = None
