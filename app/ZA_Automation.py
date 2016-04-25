@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-from Tkinter import Label, StringVar, Button, Frame, SUNKEN, CENTER, Scrollbar, Listbox, END
-from ZAutomate_Config import Root
+from Tkinter import Tk, Label, StringVar, Button, Frame, SUNKEN, CENTER, Scrollbar, Listbox, END
 from ZAutomate_CartQueue import CartQueue
 from ZAutomate_DBInterface import DBInterface
 
@@ -40,7 +39,7 @@ class Automation():
         ###                    command=self.ButtonHandler defines the call-back function for when the button is pressed
         self.ButtonContent = StringVar()
         self.ButtonContent.set('  START    ')
-        self.Button = Button(Root, textvariable=self.ButtonContent, command=self.ButtonHandler, width=16, height=2)
+        self.Button = Button(self.Master, textvariable=self.ButtonContent, command=self.ButtonHandler, width=16, height=2)
         ###YAtES_COMMENT: .config() function bigs the padding, background and foreground color and button style.
         self.Button.config(bd=2, relief='groove', bg='#008500', highlightbackground='#008500')
 
@@ -173,8 +172,10 @@ class Automation():
 
         self.Master.destroy()
 
-Root.geometry(WINDOW_PARAMS)
-Auto = Automation(Root, SIZE_X)
-Root.protocol("WM_DELETE_WINDOW", Auto.Bail)
-Root.title("ZAutomate :: Automation")
-Root.mainloop()
+root = Tk()
+root.geometry(WINDOW_PARAMS)
+
+automation = Automation(root, SIZE_X)
+root.protocol("WM_DELETE_WINDOW", automation.Bail)
+root.title("ZAutomate :: Automation")
+root.mainloop()

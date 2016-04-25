@@ -2,7 +2,6 @@ import os
 import signal
 import time
 import tkSnack
-from ZAutomate_Config import Root
 
 DEBUG_MUTE = False
 
@@ -14,9 +13,9 @@ class Player():
     KeepGoing = False
     Callback = None
 
-    def __init__(self, filepath):
+    def __init__(self, root, filepath):
         self.Path = filepath
-        tkSnack.initializeSnack(Root)
+        tkSnack.initializeSnack(root)
 
         self.Snack = tkSnack.Sound(file=self.Path) ## can use load= instead
         self.Length = self.Snack.length(unit='SECONDS') * 1000

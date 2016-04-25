@@ -1,6 +1,8 @@
 from Tkinter import Frame, Canvas
-from ZAutomate_Config import CART_WIDTH, CART_HEIGHT
 from ZAutomate_DBInterface import DBInterface
+
+CART_WIDTH = 200
+CART_HEIGHT = 75
 
 ColorNowPlaying = "#00FF00"
 ColorReady = "#009999"

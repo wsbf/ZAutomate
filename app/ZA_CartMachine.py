@@ -2,13 +2,14 @@
 
 import random
 from Tkinter import Frame, Label, N, Button
-from ZAutomate_Config import CARTS_ROWS, CARTS_COLS
 from ZAutomate_DBInterface import DBInterface
 from ZAutomate_Gridder import Gridder
 from ZAutomate_GridObj import GridObj
 from ZAutomate_Meter import Meter
 
 METER_WIDTH = 1250
+GRID_ROWS = 8
+GRID_COLS = 6
 
 ###    TO DO
 ###        hourly reload - add to tkinter event loop? (call Carts.Reload)
@@ -44,10 +45,9 @@ class CartMachine(Frame):
         Frame.__init__(self)
         self.Grid = {}
 
-        ###Initialize Rows and Cols from ZAutomate_Config
-        self.Rows = CARTS_ROWS  ##8
-        self.Cols = CARTS_COLS  ##6
-        ###Instantiate new Gridder object
+        self.Rows = GRID_ROWS
+        self.Cols = GRID_COLS
+
         self.Gridder = Gridder(self.Rows, self.Cols)
 
         ###YATES_COMMENT: Great comment, Zach.
@@ -256,7 +256,6 @@ class CartMachine(Frame):
 
     def Bail(self):
         self.master.destroy()
-
 
 cartMachine = CartMachine()
 cartMachine.master.protocol("WM_DELETE_WINDOW", cartMachine.Bail)

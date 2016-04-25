@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 
 import thread
-from Tkinter import Frame, Label, BooleanVar, SUNKEN, NW, Radiobutton, Entry, Button, S
-from ZAutomate_Config import CARTS_ROWS, CARTS_COLS, Root
+from Tkinter import Tk, Frame, Label, BooleanVar, SUNKEN, NW, Radiobutton, Entry, Button, S
 from ZAutomate_GridObj import GridObj
 from ZAutomate_Meter import Meter
 from ZAutomate_DBInterface import DBInterface
 from ZAutomate_DualBox import DualBox
 
-## hack for WSBF left monitor
 METER_WIDTH = 1000
+GRID_ROWS = 5
+GRID_COLS = 6
 
 class Studio(Frame):
     Master = None
@@ -31,8 +31,8 @@ class Studio(Frame):
     def __init__(self, parent):
         Frame.__init__(self)
         self.Master = parent
-        self.Rows = CARTS_ROWS - 3
-        self.Cols = CARTS_COLS
+        self.Rows = GRID_ROWS
+        self.Cols = GRID_COLS
         self.Grid = {}
 
         # make the whole shebang resizable
@@ -163,8 +163,8 @@ class Studio(Frame):
     def Bail(self):
         self.Master.destroy()
 
-
-foo = Studio(Root)
-Root.protocol("WM_DELETE_WINDOW", foo.Bail)
-Root.title("ZAutomate :: DJ Studio")
-Root.mainloop()
+root = Tk()
+studio = Studio(root)
+root.protocol("WM_DELETE_WINDOW", studio.Bail)
+root.title("ZAutomate :: DJ Studio")
+root.mainloop()
