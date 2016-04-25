@@ -7,28 +7,28 @@ from Tkinter import *
 import sys, urllib, time, os
 
 class Automation():
-    Master = None    
-            
+    Master = None
+
     CQ = None ## CartQueue class...
     DBI = None ## DBInterface class...
-    
+
     # instantiate everything
     def __init__(self, master, width):
-        
+
         self.Master = master
-        
+
         ###YATES_COMMENT: This may be a dead variable.  No one ever seems to be
         ###                    using self.font, but rather font=('Helvetica', '12', 'bold')
         ###                    as an inline parameter
-        ###YATES_ANSWER:  In the calls to Label, passing in self.font flags an 
+        ###YATES_ANSWER:  In the calls to Label, passing in self.font flags an
         ###               error, where as saying font=('Helvetica', 12, 'bold')
         ###               does not.
         #self.font = ('Helvetica', 12, 'bold')
         ###YATES_COMMENT: Sets the title and its attributes for the Window.
         self.Title = Label(self.Master, fg='#000', font=('Helvetica', 36, 'bold italic'), text='ZAutomate :: Automation')
         self.Title.grid(row=0, column=0, columnspan=3)
-        
-        
+
+
         ###YATES_COMMENT: Initializes the START button on start up.
         ###                    textvariable=self.ButtonContent is how the button text is populated
         ###                    command=self.ButtonHandler defines the call-back function for when the button is pressed
@@ -37,54 +37,54 @@ class Automation():
         self.Button = Button(Root, textvariable=self.ButtonContent, command=self.ButtonHandler, width=16, height=2)
         ###YAtES_COMMENT: .config() function bigs the padding, background and foreground color and button style.
         self.Button.config(bd=2, relief='groove', bg='#008500', highlightbackground='#008500')
-        
+
         self.Button.grid(row=0,column=3)
 
         ###YATES_COMMENT: Initializes the CartQueue object with a reference master (What is master?)
-        ###                    self.UIUpdate sets the callback function 
+        ###                    self.UIUpdate sets the callback function
         ###                    for whenever the CartQueue is filled, refilled, updated,
         ###                    started, etc.
         self.CQ = CartQueue(self.Master, width, self.UIUpdate)
-        
+
         ###YATES_COMMENT: Instantiates the DBInterface class
         self.DBI = DBInterface()
         ###YATES_COMMENT: Tries to restore the ShowID from previously playing automation.
         ###                    Does so by trying to read from sid.conf.  If fails, then
-        ###                    DBInterface Rewinds the playlist date and tries for a 
+        ###                    DBInterface Rewinds the playlist date and tries for a
         ###                    new show.
         self.DBI.ShowID_Restore()
 
-        ###YATES_COMMENT: Pretty sure hte next 20 or so lines come from Tkinter        
+        ###YATES_COMMENT: Pretty sure the next 20 or so lines come from Tkinter
 
         ###YATES_COMMENT: Allocates a new frame, and populates the frame with labels for Cue Time, Track Title, Artist Name
         PlistFr = Frame(self.Master, bd=2, relief=SUNKEN)
         Label(PlistFr, font=('Helvetica', 12, 'bold'), anchor=CENTER, width=16, text='Cue Time').grid(row=0, column=0)
         Label(PlistFr, font=('Helvetica', 12, 'bold'), anchor=CENTER, width=32, text='Track Title').grid(row=0, column=1)
         Label(PlistFr, font=('Helvetica', 12, 'bold'), anchor=CENTER, width=32, text='Artist Name').grid(row=0, column=2)
-        
+
         InPlFr = Frame(PlistFr)
         scroll = Scrollbar(InPlFr, orient="vertical", command=self.ScrollHandler)
         self.CueBox = Listbox(InPlFr, selectmode='single', yscrollcommand=scroll.set, exportselection=0, width=16, height=20 )
         self.TrackBox = Listbox(InPlFr, selectmode='single', yscrollcommand=scroll.set, exportselection=0, width=32, height=20 )
         self.ArtistBox = Listbox(InPlFr, selectmode='single', yscrollcommand=scroll.set, exportselection=0, width=32, height=20 )
-        
+
         scroll.pack(side="right",fill="y")
         self.CueBox.pack(side="left",fill="x", expand=True, padx=2, pady=2)
         self.TrackBox.pack(side="left",fill="x", expand=True, padx=2, pady=2)
         self.ArtistBox.pack(side="left",fill="x", expand=True, padx=2, pady=2)
-        
-        InPlFr.grid(row=1,column=0,columnspan=3)                
+
+        InPlFr.grid(row=1,column=0,columnspan=3)
         PlistFr.grid(row=4, column=0, columnspan=4)
-        
-        ###YATES_COMMENT: Initialize the CartQuery with stuff to play.    
+
+        ###YATES_COMMENT: Initialize the CartQueue with stuff to play.
         self.CQ.InitialFill()
-    
+
     ###YATES_COMMENT: Event Handler for scrolling through the three Windows.
     def ScrollHandler(self, *args):
         self.CueBox.yview(*args)
         self.TrackBox.yview(*args)
         self.ArtistBox.yview(*args)
-    
+
     ###YATES_COMMENT: ButtonHandler for Start->Stopping->Stopped state machine
     def ButtonHandler(self):
         content = self.ButtonContent.get()
@@ -100,9 +100,9 @@ class Automation():
             self.AutoStopNow()
             self.ButtonContent.set('  START    ')
             self.Button.config(bg='#008500', highlightbackground='#008500')
-    
+
     ###YATES_COMMENT: Function to Start playing Automation...
-    def AutoStart(self, Quiet=True):        
+    def AutoStart(self, Quiet=True):
         print "Automation :: AutoStart :: Entered Function"
         self.CQ.Start(True)
         if Quiet is False:
@@ -114,7 +114,7 @@ class Automation():
         self.CQ.StopSoon()
         if Quiet is False:
             print 'Automation will stop after this track.'
-        
+
     ###YATES_COMMENT: Button to stop playing Automation now.
     def AutoStopNow(self, Quiet=True):
         print "Automation :: AutoStopNow :: Entered Function"
@@ -124,16 +124,16 @@ class Automation():
         ###                    it refills the thread;
         ###                    If KeepGoing is true (A cart just finished), dequeues the
         ###                    Cart and plays the next cart.
-        ###                    If stopped, we clear out the queue, updated UI and 
+        ###                    If stopped, we clear out the queue, updated UI and
         ###                    wait to get a new one
         print "Automationp :: AutoStopNow :: Calling CQ.Transition"
         self.CQ.Transition()
-    
+
     # callback: when anything happens in CartQueue, run this to update the UI's state
     ###YATES_COMMENT: This is the callback fucntion from the CartQueue that updates
     ###                    The UI.
     def UIUpdate(self):
-        
+
         ## clear, then reset, the playlist
         ###YATES_COMMENT: What/Where is END?
         ###YATES_ANSWER:  END is a constant/macro from Tkinter whch means the end
@@ -147,7 +147,7 @@ class Automation():
             self.CueBox.insert(END, item[0])
             self.TrackBox.insert(END, item[1])
             self.ArtistBox.insert(END, item[2])
-        
+
         ## reset (?) the button
         ###YATES_COMMENT: Presumably, if IsStopping is true, we've pressed the Stop button
         ###                    to stop at the end of the track and nothign will happen between
@@ -157,18 +157,18 @@ class Automation():
         if self.CQ.IsStopping():
             self.ButtonContent.set('  START    ')
             self.Button.config(bg='#008500', highlightbackground='#008500')
-        ###What is the state of IsStopping after this?  Shouldn't IsStopping be 
+        ###What is the state of IsStopping after this?  Shouldn't IsStopping be
         ###false, as the UIUpdate is called when we stop?
-        
+
     # called at close program; cleans everything up
     def Bail(self):
         ##print "Automation :: Bail called"
-        
+
         self.CQ.Dequeue()
         self.DBI.ShowID_Save()
-        
+
         self.Master.destroy()
-        
+
 ### end of class
 
 Root.geometry(WinGeometry)

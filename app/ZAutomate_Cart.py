@@ -23,6 +23,9 @@ class Cart():
     TimeStart = None    # only used for queueing via ZA_Automation
 
     def __init__(self, cid, title, issuer, ctype, filename):
+        # TODO: mock ZAutoLib in development
+        filename = "test/test.mp3"
+
         self.Filename = filename.strip()
         tempFile = None
         try:

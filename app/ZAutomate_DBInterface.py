@@ -11,7 +11,7 @@ import requests
 URL_CARTLOAD     = 'https://dev.wsbf.net/api/zautomate/cartmachine_load.php'
 URL_AUTOLOAD     = 'http://stream.wsbf.net/wizbif/zautomate_2.0/automation_generate_showplist.php'
 URL_AUTOSTART    = 'http://stream.wsbf.net/wizbif/zautomate_2.0/automation_generate_showid.php'
-URL_AUTOCART     = 'http://stream.wsbf.net/wizbif/zautomate_2.0/automation_add_carts.php'
+URL_AUTOCART     = 'https://dev.wsbf.net/api/zautomate/automation_add_carts.php'
 URL_STUDIOSEARCH = 'http://stream.wsbf.net/wizbif/zautomate_2.0/studio_search.php'
 
 ### sid.conf stores the previous/current showID
@@ -79,86 +79,43 @@ class DBInterface():
 
     ### return a Cart object based on its type
     def Cart_Request(self, cartType):
-        ###YATES_COMMENT: Why do we have a nested/embedded function here?
-        ###YATES_ANSWER: So that no one else can call it.  internal simply returns
-        ###                  a valid cart so we can... do something with it.
-        ###                  The Cart_Request function loops until we find a good cart
-        print self.timeStamp() + " :=: DBInterface :: Cart_Request() :: Entered Function"
-        def internal(self, cartType):
-            print self.timeStamp() + " :=: DBInterface :: Cart_Request() :: Internal() :: Entered Function"
-            lines = None
-            ###YATES_COMMENT: What can type be?
-            ###YATES_ANSWER:
-            ### MySQL TinyInt(3) --- 0 for PSA
-            ###                             1 for Underwriting
-            ###                             2 for StationID
-            ###                             3 for Promos (Fall Fest Promo?)
-            ###                             4 for NewsBombs
-            ###                             5 for SignOn Cart
-            url = URL_AUTOCART + "?type=" + cartType
-            try:
-                print self.timeStamp() + " :=: DBInterface :: Cart_Request() :: Internal() :: Grabbing a cart of type " + cartType
-                resource = urlopen(url)
-                lines = resource.read().split("\n")
-                if lines[0] == '':
-                    self.LogAppend("DBInterface :: Cart_Request() :: Internal() :: Error: No carts of type " + cartType)
+        # temporary code to transform cartType to index
+        types = {
+            0: "PSA",
+            1: "Underwriting",
+            2: "StationID"
+        }
+        for t in types:
+            if types[t] is cartType:
+                cartType = t
+
+        try:
+            # attempt to find a valid cart
+            count = 0
+            while count < 5:
+                # fetch a random cart
+                r = requests.get(URL_AUTOCART, params = {
+                    "type": cartType
+                })
+                c = r.json()
+
+                # return if cart type is empty
+                if c is None:
                     return None
-            except URLError:
-                self.LogAppend("DBInterface :: Cart_Request() :: Internal() :: Error: Could not fetch cart.")
-                self.LogAppend("DBInterface :: Cart_Request() :: Internal() :: url: "+url)
-                return None
 
-            ###YATES_COMMENT: At this point, automation_add_carts.php returns is
-            ###                    a random cart in the form of a string with the fields
-            ###                    from the libcart table.
+                # construct cart
+                pathname = LIBRARY_PREFIX + 'carts' + PLATFORM_DELIMITER + c["filename"]
+                cart = Cart(c["cartID"], c["title"], c["issuer"], c["type"], pathname)
 
-            fd = lines[0].split(', ')
-            ###YATES_COMMENT: Split results in the following array
-            ###                    fd[0] = cartID
-            ###                    fd[1] = start_date
-            ###                    fd[2] = end_date
-            ###                    fd[3] = play_mask
-            ###                    fd[4] = issuer
-            ###                    fd[5] = title
-            ###                    fd[6] = cart_typeID
-            ###                    fd[7] = filename
+                # verify cart filename
+                if cart.Verify():
+                    return cart
+                else:
+                    count += 1
+        except URLError, Error:
+            print self.timeStamp() + " :=: Error: Could not fetch cart."
 
-
-            ###YATES_COMMENT: Python URLLib function call.
-            ###  See http://docs.python.org/library/urllib.html#urllib.unquote_plus
-            ###        Replace %xx escapes by their single-character equivalent.
-            ###        Example: unquote('/%7Econnolly/') yields '/~connolly/'.
-            ###        Changes the filename to a HTML friendly form
-
-            filename = urllib.unquote_plus(fd[7])
-            filename = LIBRARY_PREFIX+'carts'+PLATFORM_DELIMITER+filename
-
-            ###YATES_COMMENT: filename is now a resolvable absolute path to the
-            ###                    cart that was added.  LIRBARY_PREFIX resides in
-            ###                    ZAutomate_Confi.py, LIBRARY_PREFIX = '/media/ZAL/'
-
-            ###          Cart(cartID, issuer, typeID, typeID, filename)
-            ###YATES_COMMENT: Why is typeID being passed twice?
-            ################thiscart = Cart(fd[0], fd[4], fd[6], fd[6], filename)
-            ###Cart Constructor
-            ###def __init__(self, cid, title, issuer, ctype, filename):
-            ###I think this really needs to be changed to
-            thiscart = Cart(fd[0], fd[5], fd[4], fd[8], filename)
-            ###Also, I think making the filename into its absolute form should be
-            ###the Cart constructor's job.
-            return thiscart
-        print self.timeStamp() + " :=: DBInterface :: Cart_Request() :: Entering loop to get a cart"
-        ctr = 0
-        while ctr < 5:
-            ct = internal(self, cartType)
-            if ct.Verify():
-                print self.timeStamp() + " :=: DBInterface :: Cart_Request() :: Found a good cart, Returning"
-                break
-            else:
-                print self.timeStamp() + " :=: DBInterface :: Cart_Request() :: Cart is no good, requesting another cart"
-                ctr += 1
-                ct = None
-        return ct
+        return None
 
     def Playlist_Next_Enqueue(self):
         ReturnList = []
@@ -217,11 +174,7 @@ class DBInterface():
 
             ###YATES_COMMENT: Get the filename in the absolute path form.
             filename = LIBRARY_PREFIX+filename[0]+PLATFORM_DELIMITER+filename[1]+PLATFORM_DELIMITER+filename[2:]
-            if os.path.isfile(filename) is not True:
-                print self.timeStamp() + " :=: Could not find file: " + (str)(filename)
-                pass
-            else:
-                print self.timeStamp() + " :=: Found file: " + (str)(filename)
+
             ###YATES_COMMENT: Results in IDCode - FileName (Not Path)
             songID = str(fd[0]) + '-' + str(fd[1])    # ID code for logging purposes
 
@@ -251,10 +204,8 @@ class DBInterface():
                 carts[t] = []
 
                 for c in carts_res:
+                    # TODO: consider moving pathname construction to Cart
                     pathname = LIBRARY_PREFIX + 'carts' + PLATFORM_DELIMITER + c["filename"]
-
-                    # TODO: mock ZAutoLib in development
-                    pathname = "test/test.mp3"
 
                     cart_tmp = Cart(c["cartID"], c["title"], c["issuer"], c["type"], pathname)
 

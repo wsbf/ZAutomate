@@ -5,20 +5,13 @@ LIBRARY_PREFIX = '/media/ZAL/' 	## '/media/DATA_NEW/ZAL/'
 PLATFORM_DELIMITER = '/' 		### should be \ on win32, / on *nix
 
 ### turn this to True to automatically log tracks played
-AUTOLOG = True
+# TODO: disable automatic logging during development
+AUTOLOG = False
 
 ### define which sound backend to use
 ### current options: "madao", "vlc" -- "snack" used to work
 PLAYER_CLASS = "madao"
 PLAYER_DRIVER = "alsa"
-
-
-VALID_CART_TYPES = ['StationID','PSA','Underwriting']
-AUTOMATION_CARTS = [('StationID', 1, 300),
-                    ('StationID+PSA', 15, 300),
-					('StationID+Underwriting', 30, 300),
-					('StationID+PSA', 45, 300)
-				   ]
 
 ## how big do you want the cart machine?
 CARTS_ROWS = 8
