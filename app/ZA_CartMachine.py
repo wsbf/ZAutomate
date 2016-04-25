@@ -18,7 +18,7 @@ METER_WIDTH = 1250
 ###        dual playback bug (esp. with madao) is fixed in GridObj.LeftClick
 ###        one cart stop, then restart: meter is not reset correctly
 ###        underwriting restricted to rightmost column
-class Carts(Frame):
+class CartMachine(Frame):
     ###Master Window Variable
     Master = None
     ###Title at top, contains Application title and Reload Button
@@ -258,7 +258,7 @@ class Carts(Frame):
         self.master.destroy()
 
 
-Lol = Carts()
-Lol.master.protocol("WM_DELETE_WINDOW", Lol.Bail)
-Lol.master.title("ZAutomate :: Cart Machine")
-Lol.mainloop()
+cartMachine = CartMachine()
+cartMachine.master.protocol("WM_DELETE_WINDOW", cartMachine.Bail)
+cartMachine.master.title("ZAutomate :: Cart Machine")
+cartMachine.mainloop()
