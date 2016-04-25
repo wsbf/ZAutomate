@@ -36,7 +36,7 @@ class Studio(Frame):
         self.Grid = {}
 
         # make the whole shebang resizable
-        top=self.Master.winfo_toplevel()
+        top = self.Master.winfo_toplevel()
         for row in range(2, self.Rows+2):
             for col in range(0, self.Cols):
                 top.rowconfigure(row, weight=1)
@@ -46,14 +46,14 @@ class Studio(Frame):
 
 
         title = Label(self.Master, fg='#000', font=('Helvetica', 36, 'bold italic'), text='ZAutomate :: DJ Studio')
-        title.grid(row=0,column=0,columnspan=self.Cols)
+        title.grid(row=0, column=0, columnspan=self.Cols)
 
         self.Meter = Meter(self.Master, METER_WIDTH, self.MeterFeeder, self.EndCallback)
-        self.Meter.grid(row=1,column=0,columnspan=self.Cols) #, sticky=E+W
+        self.Meter.grid(row=1, column=0, columnspan=self.Cols) #, sticky=E+W
 
 
         self.DualBox = DualBox(self)
-        self.DualBox.grid(row=self.Rows+2,column=0, columnspan=4)
+        self.DualBox.grid(row=self.Rows + 2, column=0, columnspan=4)
 
         ### auto cart rotation controls
         self.AutoCartBool = BooleanVar()
@@ -78,10 +78,8 @@ class Studio(Frame):
 
         self.GenerateGrid()
 
-
     def SetActiveGrid(self, grid):
         self.ActiveGrid = grid
-
 
     def IsCartActive(self):
         if self.ActiveCart is None:
@@ -98,9 +96,9 @@ class Studio(Frame):
 
     ## lovingly ripped off from ZA_Carts.BlankTheGrid
     def GenerateGrid(self):
-        for row in range(1, self.Rows+1):
-            for col in range(1, self.Cols+1):
-                key = (str)(row)+"x"+(str)(col)
+        for row in range(1, self.Rows + 1):
+            for col in range(1, self.Cols + 1):
+                key = (str)(row) + "x" + (str)(col)
                 try:
                     self.Grid[key].grid_forget()
                     self.Grid[key].destroy()
@@ -121,9 +119,6 @@ class Studio(Frame):
                 ## GridObj is by default unpaired with a Cart
                 self.Grid[key] = GridObj(self, keynext)
                 self.Grid[key].grid(row=row+1, column=col-1)
-            pass
-        pass
-
 
     def SetClipboard(self, index):
         # weird: index comes in as a str
@@ -140,7 +135,6 @@ class Studio(Frame):
             self.ActiveCart.Stop()
             self.ActiveGrid.Reset()
 
-
     def MeterFeeder(self):
         if self.ActiveCart is not None:
             return self.ActiveCart.MeterFeeder()
@@ -148,7 +142,7 @@ class Studio(Frame):
             return ("-:--", "-:--", "--", "--", None, None)
 
     def Search(self, event=None):
-        thread.start_new_thread(self.SearchInternal, ( ) )
+        thread.start_new_thread(self.SearchInternal, ())
 
     def SearchInternal(self):
         query = self.Entry.get()
@@ -161,7 +155,7 @@ class Studio(Frame):
         arr = []
         for cart in self.SearchCarts:
             temp = cart.MeterFeeder()
-            arr.append( (temp[2],temp[3]) ) ## was 2,3    5
+            arr.append((temp[2], temp[3])) ## was 2,3    5
         self.DualBox.TupleFill(arr)
 
         #print len(self.SearchCarts),
@@ -171,8 +165,6 @@ class Studio(Frame):
 
     def Bail(self):
         self.Master.destroy()
-
-
 
 
 foo = Studio(Root)

@@ -10,7 +10,6 @@ PlayerModule = __import__("ZAutomate_Player_"+PLAYER_CLASS)
 URL_LOG          = 'http://stream.wsbf.net/wizbif/zautomate_2.0/zautomate_log.php'
 
 class Cart():
-
     Index = None
     ID = None
     Title = None
@@ -63,8 +62,7 @@ class Cart():
         pass
 
     def MeterFeeder(self):
-        ##return ( 0, self.Sound.length(), self.Title, self.Issuer, self.ID, self.Type )
-        return ( self.Sound.time_elapsed(), self.Sound.length(), self.Title, self.Issuer, self.ID, self.cartType )
+        return (self.Sound.time_elapsed(), self.Sound.length(), self.Title, self.Issuer, self.ID, self.cartType)
 
     def Start(self, callback=None):
         print self.timeStamp() + " :=: Cart :: Start :: " + self.Title + " :: " + self.Issuer
@@ -78,9 +76,9 @@ class Cart():
             self.Logbook_Log(self.ID)
 
     # TODO: move this code to DBInterface and remove two-way dependency
-    def Logbook_Log(self, id):
+    def Logbook_Log(self, cartID):
         ## id will be libcart primary key for non-song; for libtrack, it will be H199-4 (for example)
-        urlUse = URL_LOG + "?cartid=" + str(id)
+        urlUse = URL_LOG + "?cartid=" + str(cartID)
         print urlUse
         try:
             resource = urllib2.urlopen(urlUse)

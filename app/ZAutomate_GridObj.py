@@ -67,10 +67,10 @@ class GridObj(Frame):
         #print "ADDING CART "+self.Cart.cartType
 
         foo = self.Cart.MeterFeeder()
-        self.Rec.itemconfigure(self._Title, text=self.Cart.Title )
+        self.Rec.itemconfigure(self._Title, text=self.Cart.Title)
         ## Below: Issuer used to be Type
-        self.Rec.itemconfigure(self._Issuer, text=(self.Cart.Issuer + " " + self.Cart.ID) )
-        self.Rec.itemconfigure(self._Length, text=self.Parent.Meter.SecsFormat(foo[1]/1000) )
+        self.Rec.itemconfigure(self._Issuer, text=(self.Cart.Issuer + " " + self.Cart.ID))
+        self.Rec.itemconfigure(self._Length, text=self.Parent.Meter.SecsFormat(foo[1]/1000))
 
         try:
             self.Rec['bg'] = ColorTypesNew[self.Cart.cartType]
@@ -79,9 +79,9 @@ class GridObj(Frame):
 
     def RemCart(self):
         self.Cart = None
-        self.Rec.itemconfigure(self._Title, text='' )
-        self.Rec.itemconfigure(self._Issuer, text='---' )
-        self.Rec.itemconfigure(self._Length, text='-:--' )
+        self.Rec.itemconfigure(self._Title, text='')
+        self.Rec.itemconfigure(self._Issuer, text='---')
+        self.Rec.itemconfigure(self._Length, text='-:--')
         self.Rec['bg'] = '#FFF'
 
     def HasCart(self):

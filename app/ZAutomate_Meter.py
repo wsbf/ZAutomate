@@ -39,7 +39,7 @@ class Meter(Canvas):
 
         ## parent class instantiation
         Canvas.__init__(self, master, bg=MeterBG, borderwidth='2', relief='groove',
-            width=width, height=self.Height )
+            width=width, height=self.Height)
 
         self.Width = (int)(self.cget('width'))
         self.MeterX0 = 0
@@ -79,7 +79,7 @@ class Meter(Canvas):
     def Start(self):
         self.KeepGoing = True
         try:
-            self.Thread = thread.start_new_thread(self.CheckCallback, ( ) )
+            self.Thread = thread.start_new_thread(self.CheckCallback, ())
         except:
             print "Meter :: Error :: Could not start thread!"
 
@@ -97,15 +97,15 @@ class Meter(Canvas):
                 ###YATES_COMMENT: fourtuple[0] is time_elapsed
                 ###                    fourtuple[1] is length
                 ###                    Value = [0...1] percentage done with a song.
-                value = ( (float)(fourtuple[0]) / (float)(fourtuple[1]) )
+                value = (float)(fourtuple[0]) / (float)(fourtuple[1])
 
             except ZeroDivisionError:
                 value = 0.0
                 print "Meter :: ERROR :: Length is 0 on " + fourtuple[2] + " by " + fourtuple[3]
 
-            position = (int)(fourtuple[0])/1000
+            position = (int)(fourtuple[0]) / 1000
 
-            length = (int)(fourtuple[1])/1000
+            length = (int)(fourtuple[1]) / 1000
             cue = length - position
             if position > length:
                 print "Meter :: Change :: Position: " + (str)(position) + " > " + (str)(length) + " :Length"
@@ -117,14 +117,14 @@ class Meter(Canvas):
             artist = fourtuple[3]
 
             ###self.itemconfigure(self._TopCtr, text=Array[0])
-            self.itemconfigure(self._Position, text=self.SecsFormat(position) )
-            self.itemconfigure(self._Length, text=self.SecsFormat(length) )
+            self.itemconfigure(self._Position, text=self.SecsFormat(position))
+            self.itemconfigure(self._Length, text=self.SecsFormat(length))
 
 
-            self.itemconfigure(self._Cue, text=self.SecsFormat(cue) )
+            self.itemconfigure(self._Cue, text=self.SecsFormat(cue))
 
-            self.itemconfigure(self._Title, text=title )
-            self.itemconfigure(self._Artist, text=artist )
+            self.itemconfigure(self._Title, text=title)
+            self.itemconfigure(self._Artist, text=artist)
 
             self.coords(self._Bar, self.MeterX0, self.MeterY0, int(self.Width * value), self.MeterY1)
 
@@ -166,12 +166,12 @@ class Meter(Canvas):
         self.KeepGoing = False
 
         self.Value = 0
-        self.itemconfigure(self._Position, text='0:00' )
-        self.itemconfigure(self._Length, text='0:00' )
-        self.itemconfigure(self._Cue, text='0:00' )
-        self.itemconfigure(self._Title, text='--' )
-        self.itemconfigure(self._Artist, text='--' )
-        self.coords(self._Bar, 0, self.MeterY0, 0, self.MeterY1 )
+        self.itemconfigure(self._Position, text='0:00')
+        self.itemconfigure(self._Length, text='0:00')
+        self.itemconfigure(self._Cue, text='0:00')
+        self.itemconfigure(self._Title, text='--')
+        self.itemconfigure(self._Artist, text='--')
+        self.coords(self._Bar, 0, self.MeterY0, 0, self.MeterY1)
 
     ## convert 180 seconds into 3:00
     def SecsFormat(self, secs):
@@ -189,17 +189,16 @@ class Meter(Canvas):
             minutes += 1
         seconds = secs
 
-
         fmt = ""
         if hours is not 0:
-            fmt += str(hours)+":"
+            fmt += str(hours) + ":"
         if minutes < 10:
             fmt += "0"
-        fmt += str(minutes)+":"
+        fmt += str(minutes) + ":"
 
         seconds = int(seconds)
         if seconds < 10:
             fmt += "0"
-        fmt += str(seconds)+""
+        fmt += str(seconds) + ""
 
         return fmt

@@ -50,7 +50,7 @@ class Carts(Frame):
 
         ###YATES_COMMENT: Great comment, Zach.
         ## make the whole shebang resizable
-        top=self.winfo_toplevel()
+        top = self.winfo_toplevel()
         for row in range(2, self.Rows+2):
             for col in range(0, self.Cols):
                 top.rowconfigure(row, weight=1)
@@ -66,7 +66,7 @@ class Carts(Frame):
         ###YATES_COMMENT: Puts the title in the grid[0][0].
         ###               Makes the Title span across
         ###               Not sure what sticky=n does.
-        self.Title.grid(row=0,column=0,columnspan=self.Cols-1, sticky=N)
+        self.Title.grid(row=0, column=0, columnspan=self.Cols-1, sticky=N)
 
         ###YATES_COMMENT: Reload Button.  Command calls Carts::Reload()
         self.B_Reload = Button(self.Master, text='Reload', bg='red', \
@@ -88,7 +88,7 @@ class Carts(Frame):
                      self.EndCallback)
         ###YATES_COMMENT: Stick the meter in grid[1][0], row 1, column 0, make
         ###               it span across all the columns
-        self.Meter.grid(row=1,column=0,columnspan=self.Cols) #, sticky=E+W
+        self.Meter.grid(row=1, column=0, columnspan=self.Cols) #, sticky=E+W
         ##self.Meter.grid_propagate(0)
 
         ###YATES_COMMENT: Call reload to fill the cart machine.
@@ -214,7 +214,7 @@ class Carts(Frame):
             for col in range(1, self.Cols+1):
                 key = (str)(row) + "x" + (str)(col)
                 self.Grid[key] = GridObj(self)
-                self.Grid[key].grid(row = row + 1, column = col - 1)
+                self.Grid[key].grid(row=row + 1, column=col - 1)
 
     def Reload(self, firstRun=False):
         if self.ActiveCart is not None:

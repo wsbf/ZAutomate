@@ -2,7 +2,6 @@ import datetime
 import thread
 import time
 from ZAutomate_Config import METER_WIDTH, PlistGenThreshold, PlistHistThreshold
-from ZAutomate_Cart import Cart
 from ZAutomate_Meter import Meter
 from ZAutomate_DBInterface import DBInterface
 

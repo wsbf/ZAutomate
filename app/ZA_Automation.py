@@ -37,7 +37,7 @@ class Automation():
         ###YAtES_COMMENT: .config() function bigs the padding, background and foreground color and button style.
         self.Button.config(bd=2, relief='groove', bg='#008500', highlightbackground='#008500')
 
-        self.Button.grid(row=0,column=3)
+        self.Button.grid(row=0, column=3)
 
         ###YATES_COMMENT: Initializes the CartQueue object with a reference master (What is master?)
         ###                    self.UIUpdate sets the callback function
@@ -63,16 +63,16 @@ class Automation():
 
         InPlFr = Frame(PlistFr)
         scroll = Scrollbar(InPlFr, orient="vertical", command=self.ScrollHandler)
-        self.CueBox = Listbox(InPlFr, selectmode='single', yscrollcommand=scroll.set, exportselection=0, width=16, height=20 )
-        self.TrackBox = Listbox(InPlFr, selectmode='single', yscrollcommand=scroll.set, exportselection=0, width=32, height=20 )
-        self.ArtistBox = Listbox(InPlFr, selectmode='single', yscrollcommand=scroll.set, exportselection=0, width=32, height=20 )
+        self.CueBox = Listbox(InPlFr, selectmode='single', yscrollcommand=scroll.set, exportselection=0, width=16, height=20)
+        self.TrackBox = Listbox(InPlFr, selectmode='single', yscrollcommand=scroll.set, exportselection=0, width=32, height=20)
+        self.ArtistBox = Listbox(InPlFr, selectmode='single', yscrollcommand=scroll.set, exportselection=0, width=32, height=20)
 
-        scroll.pack(side="right",fill="y")
-        self.CueBox.pack(side="left",fill="x", expand=True, padx=2, pady=2)
-        self.TrackBox.pack(side="left",fill="x", expand=True, padx=2, pady=2)
-        self.ArtistBox.pack(side="left",fill="x", expand=True, padx=2, pady=2)
+        scroll.pack(side="right", fill="y")
+        self.CueBox.pack(side="left", fill="x", expand=True, padx=2, pady=2)
+        self.TrackBox.pack(side="left", fill="x", expand=True, padx=2, pady=2)
+        self.ArtistBox.pack(side="left", fill="x", expand=True, padx=2, pady=2)
 
-        InPlFr.grid(row=1,column=0,columnspan=3)
+        InPlFr.grid(row=1, column=0, columnspan=3)
         PlistFr.grid(row=4, column=0, columnspan=4)
 
         ###YATES_COMMENT: Initialize the CartQueue with stuff to play.

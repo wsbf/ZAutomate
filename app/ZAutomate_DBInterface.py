@@ -40,9 +40,7 @@ class DBInterface():
     ### only call this if it gets to the present
     def ShowID_GetNewID(self):
         try:
-            r = requests.get(URL_AUTOSTART, params = {
-                "showid": self.ShowID
-            })
+            r = requests.get(URL_AUTOSTART, params={"showid": self.ShowID})
             self.ShowID = r.json()
         except:
             print "Error: Could not fetch starting show ID."
@@ -69,9 +67,7 @@ class DBInterface():
             count = 0
             while count < 5:
                 # fetch a random cart
-                r = requests.get(URL_AUTOCART, params = {
-                    "type": cartType
-                })
+                r = requests.get(URL_AUTOCART, params={"type": cartType})
                 c = r.json()
 
                 # return if cart type is empty
@@ -131,7 +127,7 @@ class DBInterface():
         print "DBInterface :: Playlist_Enqueue_Next() :: Enqueueing new showID " + (str)(self.ShowID)
         print self.timeStamp() + " :=: DBInterface :: Playlist_Enqueue_Next() :: Entering the enqueue loop"
         for line in lines:
-            if(line is ""):
+            if line is "":
                 continue
             fd = line.split("<|>")
             #CONTENTS of fd :: id title issue type filename
@@ -171,9 +167,7 @@ class DBInterface():
 
         try:
             for t in types:
-                r = requests.get(URL_CARTLOAD, params = {
-                    "type": t
-                })
+                r = requests.get(URL_CARTLOAD, params={"type": t})
 
                 carts_res = r.json()
                 carts[t] = []
@@ -185,7 +179,7 @@ class DBInterface():
                     cart_tmp = Cart(c["cartID"], c["title"], c["issuer"], c["type"], pathname)
 
                     # verify that this file exists
-                    if ( cart_tmp.Verify() ):
+                    if cart_tmp.Verify():
                         carts[t].append(cart_tmp)
 
         except:
