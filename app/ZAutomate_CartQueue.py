@@ -125,7 +125,7 @@ class CartQueue():
         return result
 
     ###YATES_COMMENT: Loops PlistGenThreshold - len(self.arr) times, calling
-    ###                    DBInterface().Playlist_Next_Enqueue() and appending it to
+    ###                    DBInterface().Get_Next_Playlist() and appending it to
     ###                    the type code Cart array self.arr.
     ###                    PlistGenThreshold can be found in ZAutomate_Config.py
     ###                    Set to 10 when I started.
@@ -133,7 +133,7 @@ class CartQueue():
     def InitialFill(self):
         print self.timeStamp() + " :=: CartQueue :: InitialFill :: PlistGenThreshold = " + (str)(PlistGenThreshold)
         while len(self.Arr) < PlistGenThreshold:
-            self.Extend( DBInterface().Playlist_Next_Enqueue() )
+            self.Extend(DBInterface().Get_Next_Playlist())
             print self.timeStamp() + " :=: CartQueue :: InitialFill enqueued... new length is "+(str)(len(self.Arr))
         self.UIUpdate()
 
@@ -144,8 +144,8 @@ class CartQueue():
         lenOld = len(self.Arr)
         print self.timeStamp() + " :=: CQ :: Dequeue :: PlayedArr is " + self.PrintPlayedArr()
         while len(self.Arr) < PlistGenThreshold:
-            refillList = DBInterface().Playlist_Next_Enqueue()
-##            self.Extend( DBInterface().Playlist_Next_Enqueue() )
+            refillList = DBInterface().Get_Next_Playlist()
+##            self.Extend( DBInterface().Get_Next_Playlist() )
             for cart in refillList:
                 ###Check to make sure the cart isn't already in Self.Arr, and hasn't been played in the
                 ###Last fill session

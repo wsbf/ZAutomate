@@ -7,7 +7,7 @@ from ZAutomate_Cart import Cart
 
 ### URLs for the web interface
 URL_CARTLOAD     = 'https://dev.wsbf.net/api/zautomate/cartmachine_load.php'
-URL_AUTOLOAD     = 'http://stream.wsbf.net/wizbif/zautomate_2.0/automation_generate_showplist.php'
+URL_AUTOLOAD     = 'https://dev.wsbf.net/api/zautomate/automation_generate_showplist.php'
 URL_AUTOSTART    = 'https://dev.wsbf.net/api/zautomate/automation_generate_showid.php'
 URL_AUTOCART     = 'https://dev.wsbf.net/api/zautomate/automation_add_carts.php'
 URL_STUDIOSEARCH = 'http://stream.wsbf.net/wizbif/zautomate_2.0/studio_search.php'
@@ -88,77 +88,41 @@ class DBInterface():
 
         return None
 
-    def Playlist_Next_Enqueue(self):
-        ReturnList = []
-        Counter = 0        ##DEBUG
-
-        if self.ShowID is not -1:
-            self.ShowID += 1
-            print self.timeStamp() + " :=: DBInterface :: Playlist_Next_Enqueue() :: Next ShowID = " + (str)(self.ShowID)
-        else:
-            print self.timeStamp() + " :=: DBInterface :: Playlist_Next_Enqueue() :: ShowID = " + (str)(self.ShowID)
-            print self.timeStamp() + " :=: DBInterface :: Playlist_Next_Enqueue() :: calling ShowID_GetNewID()"
+    def Get_Next_Playlist(self):
+        # get next show ID
+        if self.ShowID is -1:
+            print self.timeStamp() + " :=: DBInterface :: Get_Next_Playlist() :: calling ShowID_GetNewID()"
             self.ShowID_GetNewID()
-        lines = None
-        if self.ShowID is not None:
-            print self.timeStamp() + " :=: DBInterface :: Playlist_Next_Enqueue() :: calling automation_generate_showplist.php"
-            url = URL_AUTOLOAD + "?sid=" + (str)(self.ShowID)
-            try:
-                resource = urllib.urlopen(url)
-                lines = resource.read().split("\n")
-            except:
-                print "Error: Could not fetch playlist."
-                print "url: " + url
+        else:
+            self.ShowID += 1
 
-        ###YATES_COMMENT: I have no idea what this does.  I assume it takes the
-        ###                    characters 7:Strlen of line[0] and casts it as an int.
-        ###                    What that does, I have no idea.
-
-        ###YATES_ANSWER: echo "SHOWID ".$sID."\n" is the first line returned from
-        ###                  automation_generate_showplist.php.
-        print self.timeStamp() + " :=: DBInterface :: Playlist_Next_Enqueue :: old showid = " + str(lines[0][7:])
+        # get next playlist
+        playlist = []
         try:
-            self.ShowID = int(lines[0][7:])
-        except ValueError:
-            print self.timeStamp() + " :=: url = " + (str)(url)
-            print self.timeStamp() + " :=: DBInterface :: Playlist_Next_Enqueue :: new showid = " + str(lines[0][7:])
-        print self.timeStamp() + " :=: DBInterface :: Playlist_Next_Enqueue :: new showid = " + str(lines[0][7:])
-        lines.pop(0)
-        print "DBInterface :: Playlist_Enqueue_Next() :: Enqueueing new showID " + (str)(self.ShowID)
-        print self.timeStamp() + " :=: DBInterface :: Playlist_Enqueue_Next() :: Entering the enqueue loop"
-        for line in lines:
-            if line is "":
-                continue
-            fd = line.split("<|>")
-            #CONTENTS of fd :: id title issue type filename
-            try:
-                filename = urllib.unquote_plus(fd[8])
-            except IndexError:
-                print "DBInterface :: Playlist_Enqueue_Next() :: Index Out Of Bounds Error"
-                print "DBInterface :: Playlist_Enqueue_Next() :: line = " + (str)(line)
+            res = requests.get(URL_AUTOLOAD, params={"showid": self.ShowID})
+            show = res.json()
 
-            ###YATES_COMMENT: Python URLLib function call.
-            ###  See http://docs.python.org/library/urllib.html#urllib.unquote_plus
-            ###        Replace %xx escapes by their single-character equivalent.
-            ###        Example: unquote('/%7Econnolly/') yields '/~connolly/'.
-            ###        Changes the filename to a HTML friendly form
+            self.showID = show["showID"]
 
-            ###YATES_COMMENT: Get the filename in the absolute path form.
-            filename = LIBRARY_PREFIX+filename[0]+PLATFORM_DELIMITER+filename[1]+PLATFORM_DELIMITER+filename[2:]
+            print "DBInterface :: Playlist_Enqueue_Next() :: Enqueueing new showID " + (str)(self.ShowID)
 
-            ###YATES_COMMENT: Results in IDCode - FileName (Not Path)
-            songID = str(fd[0]) + '-' + str(fd[1])    # ID code for logging purposes
+            for track in show["playlist"]:
+                # TODO: move decoding to server, move pathname building to Track constructor
+                filename = urllib.unquote_plus(track["file_name"])
+                filename = LIBRARY_PREFIX + filename[0] + PLATFORM_DELIMITER + filename[1] + PLATFORM_DELIMITER + filename[2:]
 
-            ###YATES_COMMENT: This seems a little hairy.  We're using the Cart class for both
-            ###                    Songs being played and Carts (PSA/UW/ID/Etc)
-            thiscart = Cart(songID, fd[5], fd[4], fd[3], filename)
+                trackID = track["lb_album_code"] + "-" + track["lb_track_num"]
 
-            ###def __init__(self, cid, title, issuer, cartType, filename):
-            if thiscart.Verify():
-                ReturnList.append(thiscart)
-            else:
-                print self.timeStamp() + " :=: DBInterface :: Playlist_Enqueue_Next :: cart file " + filename + " does not exist"
-        return ReturnList
+                cart = Cart(trackID, track["lb_track_name"], track["artist_name"], track["rotation"], filename)
+
+                if cart.Verify():
+                    playlist.append(cart)
+                else:
+                    print self.timeStamp() + " :=: DBInterface :: Playlist_Enqueue_Next :: cart file \"" + filename + "\" does not exist"
+        except:
+            print "Error: Could not fetch playlist."
+
+        return playlist
 
     ### load a dictionary of cart types to cart arrays
     def CartMachine_Load(self):

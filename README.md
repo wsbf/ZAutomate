@@ -19,6 +19,8 @@ pylint **/*.py > lint.out
 
 ## TODO
 
+- create separate classes for carts and tracks
+- resolve lint errors
 - Migrate DBInterface to use the new PHP API
 - Automation stops playing PSAs after a long time?
 - Automation should only play songs currently in rotation
