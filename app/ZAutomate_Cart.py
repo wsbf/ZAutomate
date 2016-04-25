@@ -6,7 +6,7 @@ from ZAutomate_Config import PLAYER_CLASS, AUTOLOG
 print "\t---Using Player "+PLAYER_CLASS+"---"
 PlayerModule = __import__("ZAutomate_Player_"+PLAYER_CLASS)
 
-### TODO: move the dependent code to DBInterface
+# TODO: move to DBInterface
 URL_LOG          = 'http://stream.wsbf.net/wizbif/zautomate_2.0/zautomate_log.php'
 
 class Cart():
@@ -74,18 +74,21 @@ class Cart():
             print self.timeStamp() + " :=: Cart :: Start :: ERROR :: could not play the file " + self.Filename
             return
 
-        ### TODO: move to DBInterface, have this code called from other classes
         if AUTOLOG:
-            ## self.ID will be libcart primary key for non-song; for libtrack, it will be H199-4 (for example)
-            urlUse = URL_LOG + "?cartid=" + str(self.ID)
-            print urlUse
-            try:
-                resource = urllib2.urlopen(urlUse)
-                lines = resource.read().split("\n")
-                for line in lines:
-                    print line
-            except:
-                print self.timeStamp() + " :=: Caught error: Could not access cart logger."
+            self.Logbook_Log(self.ID)
+
+    # TODO: move this code to DBInterface and remove two-way dependency
+    def Logbook_Log(self, id):
+        ## id will be libcart primary key for non-song; for libtrack, it will be H199-4 (for example)
+        urlUse = URL_LOG + "?cartid=" + str(id)
+        print urlUse
+        try:
+            resource = urllib2.urlopen(urlUse)
+            lines = resource.read().split("\n")
+            for line in lines:
+                print line
+        except:
+            print self.timeStamp() + " :=: Caught error: Could not access cart logger."
 
     def Stop(self):
         print self.timeStamp() + " :=: Cart :: Stop :: " + self.Issuer + " - " + self.Title
