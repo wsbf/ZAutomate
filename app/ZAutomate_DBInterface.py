@@ -10,7 +10,7 @@ import requests
 ### URLs for the web interface
 URL_CARTLOAD     = 'https://dev.wsbf.net/api/zautomate/cartmachine_load.php'
 URL_AUTOLOAD     = 'http://stream.wsbf.net/wizbif/zautomate_2.0/automation_generate_showplist.php'
-URL_AUTOSTART    = 'http://stream.wsbf.net/wizbif/zautomate_2.0/automation_generate_showid.php'
+URL_AUTOSTART    = 'https://dev.wsbf.net/api/zautomate/automation_generate_showid.php'
 URL_AUTOCART     = 'https://dev.wsbf.net/api/zautomate/automation_add_carts.php'
 URL_STUDIOSEARCH = 'http://stream.wsbf.net/wizbif/zautomate_2.0/studio_search.php'
 
@@ -29,52 +29,33 @@ class DBInterface():
 
     ### try to pull the show id we last used from the config file.
     def ShowID_Restore(self):
-        print self.timeStamp() + " :=: DBInterface:: ShowID_Restore :: Executing..."
-
-        if os.access(FILE_AUTOCONF, os.R_OK) is True and self.ShowID < 0:
-            f = open(FILE_AUTOCONF, 'r')
-
-            try:
-                self.ShowID = (int)(f.read())
-                print self.timeStamp() + " :=: DBInterface :: ShowID_Restore :: Saved ShowID = " + (str)(self.ShowID)
-            except ValueError:
-                self.LogAppend("Error: Prior show ID is malformed.")
-        else:
-            print self.timeStamp() + " :=: DBInterface :: ShowID_Restore :: Could not open file " + FILE_AUTOCONF
-
-        ### otherwise, step back in time here to get self.ShowID without hardset
         if self.ShowID is -1:
-            print self.timeStamp() + " :=: DBInterface :: ShowID_Restore :: ShowID = -1, calling ShowID_Rewind"
-            self.ShowID_GetNewID()
+            if os.access(FILE_AUTOCONF, os.R_OK) is True:
+                f = open(FILE_AUTOCONF, 'r')
 
-    ### simple - get or generate the ShowID
-    ###YATES_COMMENT: Mutating getters are bad.
-    def ShowID_Get(self):
-        if self.ShowID is -1:
-            print self.timeStamp() + " :=: DBInterface :: ShowID_Get() :: ShowID == -1, calling ShowID_Restore()"
-            self.ShowID_Restore()
-        return self.ShowID
+                try:
+                    self.ShowID = (int)(f.read())
+                except ValueError:
+                    self.LogAppend("Error: Prior show ID is malformed.")
+
+            ### otherwise, step back in time here to get self.ShowID without hardset
+            else:
+                self.ShowID_GetNewID()
 
     ### push automation back a global number of days
     ### only call this if it gets to the present
     def ShowID_GetNewID(self):
-        self.LogAppend("DBInterface :: ShowID_GetNewID :: Getting new ShowID...")
-        self.LogAppend("DBInterface :: ShowID_GetNewID :: calling automation_generate_showid("+(str)(self.ShowID)+")")
-        url = URL_AUTOSTART + "?showid=" + (str)(self.ShowID)
         try:
-            resource = urlopen(url)
-            ##YATES_COMMENT: Where does resource come from?
-            ##YATES_ANSWER:  Resource is a temporary variable that is used to read
-            ##                    a showID from the URL
-            self.ShowID = (int)(resource.read())
-            print self.timeStamp() + " :=: DBInterface :: ShowID_GetNewID :: new ShowID = " + (str)(self.ShowID)
+            r = requests.get(URL_AUTOSTART, params = {
+                "showid": self.ShowID
+            })
+            self.ShoWID = r.json()
         except URLError, Error:
             self.LogAppend("Error: Could not fetch starting show ID.")
-            self.LogAppend("url: "+url)
 
     def ShowID_Save(self):
         f = open(FILE_AUTOCONF, 'w')
-        f.write((str)(self.ShowID+1))
+        f.write((str)(self.ShowID + 1))
         f.close()
 
     ### return a Cart object based on its type
