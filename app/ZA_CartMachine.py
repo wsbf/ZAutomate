@@ -142,7 +142,7 @@ class CartMachine(Frame):
             progs[t] = self.Gridder.GridCorner(config[t]["corner"])
 
         # get a dictonary of carts for each cart type
-        carts = database.CartMachine_Load()
+        carts = database.get_carts()
 
         # apply limiting and shuffling to each cart type
         for t in carts:

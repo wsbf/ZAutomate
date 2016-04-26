@@ -138,7 +138,7 @@ class Studio(Frame):
         query = self.Entry.get()
 
         if len(query) >= 3:
-            self.SearchCarts = database.Studio_Search(query)
+            self.SearchCarts = database.search_library(query)
 
             ## fill the DualBox with the search results
             arr = []

@@ -55,7 +55,7 @@ class CartQueue():
         ###                    Does so by trying to read from sid.conf.  If fails, then
         ###                    DBInterface Rewinds the playlist date and tries for a
         ###                    new show.
-        self.ShowID = database.ShowID_Restore()
+        self.ShowID = database.restore_show_id()
 
         ###Instantiate new Array for Carts
         self.Arr = []
@@ -70,8 +70,8 @@ class CartQueue():
         ###YATES_COMMENT: What/Where is MeterFeeder?
         ###YATES_ANSWER: It's a Function or Macro, defined at the bottom,
         ###                  it returns self.Arr[0].MeterFeeder();
-        self.Meter = Meter(master,width-10, self.MeterFeeder, self.Transition)
-        self.Meter.grid(row=1,column=0,columnspan=4)
+        self.Meter = Meter(master, width - 10, self.MeterFeeder, self.Transition)
+        self.Meter.grid(row=1, column=0, columnspan=4)
 
     ###YATES_COMMENT: Extend takes an array of Carts and appends it to the end
     ###                    of self.Arr.  cartArr's type code must be the same as Arr's
@@ -106,44 +106,38 @@ class CartQueue():
         print self.timeStamp() + " :=: CQ :: Dequeue :: Leaving Dequeue..."
 
     def Save(self):
-        database.ShowID_Save(self.ShowID)
+        database.save_show_id(self.ShowID)
 
-    def IsCartInList(self, cartvar, Arr):
-        result = 0
-        #print self.timeStamp() + " :=: CQ :: IsCartInList :: Checking for cart " + (str)(cartvar.Issuer) + " - " + (str)(cartvar.Title)
-        if cartvar == None:
-            return 1
+    def IsCartInList(self, cart, Arr):
+        if cart is None:
+            return False
+
         for item in Arr:
-            if( cartvar.Issuer == item.Issuer and
-                 cartvar.Title == item.Title):
-                print self.timeStamp() + " :=: CQ :: IsCartInList :: Found Artist " + (str)(cartvar.Issuer) + " - " + (str)(cartvar.Title)
-                result = 1
-                break
-        return result
+            if cart.Issuer is item.Issuer and cart.Title is item.Title:
+                print self.timeStamp() + " :=: CQ :: IsCartInList :: Found Cart " + (str)(cart.Issuer) + " - " + (str)(cart.Title)
+                return True
 
-    def IsArtistInList(self, cartvar, Arr):
-        result = 0
-        #print self.timeStamp() + " :=: CQ :: IsArtistInList :: Checking for artist " + (str)(cartvar.Issuer)
-        if cartvar == None:
-            result = 1
-        else:
-            for item in Arr:
-                if cartvar.Issuer == item.Issuer:
-                    print self.timeStamp() + " :=: CQ :: IsArtistInList :: Found Artist " + (str)(cartvar.Issuer)
-                    result = 1
-                    break
-        return result
+        return False
+
+    def IsArtistInList(self, cart, Arr):
+        if cart is None:
+            return True
+
+        for item in Arr:
+            if cart.Issuer is item.Issuer:
+                print self.timeStamp() + " :=: CQ :: IsArtistInList :: Found Artist " + (str)(cart.Issuer)
+                return True
+
+        return False
 
     ###YATES_COMMENT: Loops PlistGenThreshold - len(self.arr) times, calling
-    ###                    database.Get_Next_Playlist() and appending it to
+    ###                    database.get_next_playlist() and appending it to
     ###                    the type code Cart array self.arr.
-    ###                    PlistGenThreshold can be found in ZAutomate_Config.py
-    ###                    Set to 10 when I started.
     ###                    Calls the UIUpdate callback when done.
     def InitialFill(self):
         print self.timeStamp() + " :=: CartQueue :: InitialFill :: PlistGenThreshold = " + (str)(PlistGenThreshold)
         while len(self.Arr) < PlistGenThreshold:
-            show = database.Get_Next_Playlist(self.ShowID)
+            show = database.get_next_playlist(self.ShowID)
             self.ShowID = show["showID"]
             self.Extend(show["playlist"])
             print self.timeStamp() + " :=: CartQueue :: InitialFill enqueued... new length is "+(str)(len(self.Arr))
@@ -156,15 +150,15 @@ class CartQueue():
         lenOld = len(self.Arr)
         print self.timeStamp() + " :=: CQ :: Dequeue :: PlayedArr is " + self.PrintPlayedArr()
         while len(self.Arr) < PlistGenThreshold:
-            show = database.Get_Next_Playlist()
+            show = database.get_next_playlist(self.ShowID)
             self.ShowID = show["showID"]
 
             for cart in show["playlist"]:
                 ###Check to make sure the cart isn't already in Self.Arr, and hasn't been played in the
                 ###Last fill session
-                if self.IsCartInList(cart, self.PlayedArr) == 0 and self.IsCartInList(cart, self.Arr) == 0:
+                if not self.IsCartInList(cart, self.PlayedArr) and not self.IsCartInList(cart, self.Arr):
                     ###Check to see if the artist is already in the list.
-                    if self.IsArtistInList(cart, self.Arr) == 0 and self.IsArtistInList(cart, self.PlayedArr) == 0:
+                    if not self.IsArtistInList(cart, self.Arr) and not self.IsArtistInList(cart, self.PlayedArr):
                         self.Arr.append(cart)
                     else:
                         print self.timeStamp() + " :=: CQ :: Refill :: Checking for existing Artist :: found duplicate artist: " + (str)(cart.Issuer)
@@ -190,12 +184,12 @@ class CartQueue():
         print self.timeStamp() + " :=: CQ :: Transition :: Checking for refilling everything..."
         if len(self.Arr) < PlistGenThreshold:
             print self.timeStamp() + " :=: CQ :: Transition :: Starting new Refill() thread"
-            thread.start_new_thread(self.Refill, ( ) )
+            thread.start_new_thread(self.Refill, ())
         print self.timeStamp() + " :=: CQ :: Transition :: Checking for refilling carts..."
         ###YATES_COMMENT: If we've got 0 carts, then our playlist was significantly longer
         ###               than an hour.  So lets refill some carts.
         if self.CountCartsInQueue() == 0:
-           thread.start_new_thread(self.InsertAllCarts, ( ) )
+            thread.start_new_thread(self.InsertAllCarts, ())
         ###YATES_COMMENT: if self.KeepGoing is true, then we've just skipped a song.
         ###                    dequeue the front song (dequeue stops playing) and start
         ###                    the new front of queueue.
@@ -346,7 +340,7 @@ class CartQueue():
         print self.timeStamp() + " :=: CQ :: InsertCart :: Entered Function"
 
         ###YATES_COMMENT: This returns today:thisHour:00:00:00
-        relevantInsertTime = datetime.datetime.now().replace(minute=0,second=0, microsecond=0)
+        relevantInsertTime = datetime.datetime.now().replace(minute=0, second=0, microsecond=0)
         ###YATES_COMMENT: This adds the minutebreak (when we want to insert) to
         ###                    the relevantInsertTime.
         ###                    relevantInserTime = today:thisHouse:minuteBreak:00:00
@@ -452,7 +446,7 @@ class CartQueue():
             ## get Carts to insert
 
             for cType in cartTypes:
-                cart = database.Cart_Request(cType)
+                cart = database.get_cart(cType)
                 print self.timeStamp() + " :=: CQ :: InsertCart :: Inserting cart " + cart.Issuer + " - " + cart.Title + " at index " + (str)(insertionCounter+offset) + " with start time " + self.Arr[insertionCounter].GetFmtTime()
                 # + " with start time: " + self.Arr[insertionCounter+offset].getTimeStruct()
                 self.Arr.insert(insertionCounter+offset, cart)
@@ -464,7 +458,7 @@ class CartQueue():
             print self.timeStamp() + " :=: CQ :: InsertCart :: bestDiffSoFar = " + (str)(bestDiffSoFar)
             print self.timeStamp() + " :=: CQ :: InsertCart :: best cart star time = : " + self.Arr[ctr].GetFmtTime()
             for cType in cartTypes:
-                cart = database.Cart_Request(cType)
+                cart = database.get_cart(cType)
                 print self.timeStamp() + " :=: CQ :: InsertCart :: Inserting cart " + cart.Issuer + " - " + cart.Title + " at index " + (str)(insertionCounter+offset) + " with start time " + self.Arr[insertionCounter].GetFmtTime()
                 # + " with start time: " + self.Arr[insertionCounter+offset].getTimeStruct()
                 self.Arr.insert(insertionCounter+offset, cart)
@@ -490,7 +484,7 @@ class CartQueue():
         try:
             self.Meter.Start()
             self.Arr[0].Start(self.Transition)
-            database.Logbook_Log(self.Arr[0].ID)
+            database.log_cart(self.Arr[0].ID)
 
             print self.timeStamp() + " :=: \t" + self.Arr[0].Title + " by " + self.Arr[0].Issuer
         except IndexError:
@@ -500,7 +494,7 @@ class CartQueue():
         ###If called by button click, InsertAllCarts under a new thread.
         if click is True:
             print self.timeStamp() + " :=: CQ :: Start :: Starting new InsertAllCarts() Thread"
-            thread.start_new_thread(self.InsertAllCarts, ( ) )
+            thread.start_new_thread(self.InsertAllCarts, ())
 
         self.UIUpdate()
 
@@ -525,7 +519,7 @@ class CartQueue():
     def GetArray(self):
         ret = []
         for cart in self.Arr:
-            ret.append( (cart.GetFmtTime(), cart.Title, cart.Issuer) )
+            ret.append((cart.GetFmtTime(), cart.Title, cart.Issuer))
         return ret
 
     ###YATES_METHOD

@@ -137,7 +137,7 @@ class GridObj(Frame):
                 self.Parent.Meter.Start()
                 self.Cart.Start(self.Reset) ##self.OnComplete
                 self.Rec['bg'] = ColorNowPlaying
-                database.Logbook_Log(self.Cart.ID)
+                database.log_cart(self.Cart.ID)
             pass
         ### click on an empty cart; add the clipboarded cart
         else:

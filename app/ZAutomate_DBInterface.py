@@ -22,19 +22,12 @@ LOGGING = True
 def timeStamp():
     return time.asctime(time.localtime(time.time()))
 
-### try to pull the show id we last used from the config file.
-def ShowID_Restore():
-    if os.access(FILE_AUTOCONF, os.R_OK) is True:
-        f = open(FILE_AUTOCONF, "r")
-        showID = f.read();
+def get_new_show_id(showID):
+    """Get a new show ID for queueing playlists.
 
-        if showID.isdigit():
-            return (int)(showID)
+    :param showID: previous show ID, which will be excluded
+    """
 
-    return ShowID_GetNewID(-1)
-
-### get a random show ID from the recent past
-def ShowID_GetNewID(showID):
     try:
         res = requests.get(URL_AUTOSTART, params={"showid": showID})
         return res.json()
@@ -42,13 +35,31 @@ def ShowID_GetNewID(showID):
         print "Error: Could not fetch starting show ID."
         return -1
 
-def ShowID_Save(showID):
-    f = open(FILE_AUTOCONF, "w")
-    f.write((str)(showID + 1))
-    f.close()
+def restore_show_id():
+    """Attempt to restore the show ID that was saved to the config file."""
 
-### return a Cart object based on its type
-def Cart_Request(cartType):
+    if os.access(FILE_AUTOCONF, os.R_OK) is True:
+        f = open(FILE_AUTOCONF, "r")
+        showID = f.read()
+
+        if showID.isdigit():
+            return (int)(showID)
+
+    return get_new_show_id(-1)
+
+def save_show_id(showID):
+    """Save a show ID to the config file."""
+
+    try:
+        f = open(FILE_AUTOCONF, "w")
+        f.write((str)(showID + 1))
+        f.close()
+    except IOError:
+        print "Error: Could not save show ID to config file."
+
+def get_cart(cartType):
+    """Get a random cart of a given type."""
+
     # temporary code to transform cartType to index
     types = {
         0: "PSA",
@@ -85,13 +96,19 @@ def Cart_Request(cartType):
 
     return None
 
-def Get_Next_Playlist(showID):
+def get_next_playlist(showID):
+    """Get the playlist from a past show.
+
+    Currently the previous show ID is just incremented,
+    which is not guaranteed to yield a valid playlist,
+    so this function is usually called several times until
+    enough tracks are retrieved.
+
+    :param showID: previous show ID
+    """
+
     # get next show ID
-    if showID is -1:
-        print timeStamp() + " :=: DBInterface :: Get_Next_Playlist() :: calling ShowID_GetNewID()"
-        showID = ShowID_GetNewID()
-    else:
-        showID += 1
+    showID += 1
 
     # get next playlist
     show = {
@@ -122,17 +139,19 @@ def Get_Next_Playlist(showID):
 
     return show
 
-### load a dictionary of cart types to cart arrays
-def CartMachine_Load():
-    types = [0, 1, 2, 3]
-    carts = {}
+def get_carts():
+    """Load a dictionary of cart arrays for each cart type."""
+    carts = {
+        0: [],
+        1: [],
+        2: [],
+        3: []
+    }
 
     try:
-        for t in types:
+        for t in carts:
             res = requests.get(URL_CARTLOAD, params={"type": t})
             carts_res = res.json()
-
-            carts[t] = []
 
             for c in carts_res:
                 # TODO: consider moving filename construction to Cart
@@ -149,8 +168,13 @@ def CartMachine_Load():
 
     return carts
 
-def Studio_Search(query):
-    results = [];
+def search_library(query):
+    """Search the music library for tracks and carts.
+
+    :param query: search term
+    """
+
+    results = []
     try:
         res = requests.get(URL_STUDIOSEARCH, params={"query": query})
         results_res = res.json()
@@ -174,13 +198,17 @@ def Studio_Search(query):
 
     return results
 
-def Logbook_Log(cartID):
+def log_cart(cartID):
+    """Log a cart or track.
+
+    :param cartID: cart ID, or [album_code]-[track_num] for a track
+    """
+
     if LOGGING is False:
         return
 
-    ## id will be libcart primary key for non-song; for libtrack, it will be H199-4 (for example)
     try:
         res = requests.post(URL_LOG, params={"cartid": cartID})
         print res.text
-    except:
+    except requests.exceptions.SSLError:
         print timeStamp() + " :=: Caught error: Could not access cart logger."
