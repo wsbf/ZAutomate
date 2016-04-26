@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 import thread
-from Tkinter import Tk, Frame, Label, BooleanVar, SUNKEN, NW, Radiobutton, Entry, Button, S
+import Tkinter
+from Tkinter import Tk, Frame, Label, BooleanVar, NW, Radiobutton, Entry, Button, S
 from ZAutomate_GridObj import GridObj
 from ZAutomate_Meter import Meter
 from ZAutomate_DBInterface import DBInterface
@@ -44,13 +45,11 @@ class Studio(Frame):
                 self.rowconfigure(row, weight=1)
                 self.columnconfigure(col, weight=1)
 
-
         title = Label(self.Master, fg='#000', font=('Helvetica', 36, 'bold italic'), text='ZAutomate :: DJ Studio')
         title.grid(row=0, column=0, columnspan=self.Cols)
 
         self.Meter = Meter(self.Master, METER_WIDTH, self.MeterFeeder, self.EndCallback)
         self.Meter.grid(row=1, column=0, columnspan=self.Cols) #, sticky=E+W
-
 
         self.DualBox = DualBox(self)
         self.DualBox.grid(row=self.Rows + 2, column=0, columnspan=4)
@@ -58,12 +57,11 @@ class Studio(Frame):
         ### auto cart rotation controls
         self.AutoCartBool = BooleanVar()
         self.AutoCartBool.set(True)
-        control = Frame(self.Master, bd=2, relief=SUNKEN)
+        control = Frame(self.Master, bd=2, relief=Tkinter.SUNKEN)
         Label(control, font=('Helvetica', 14, 'bold'), fg='#000', text='Auto-Slot Rotation').pack(anchor=NW)
         Radiobutton(control, text='Enabled', variable=self.AutoCartBool, value=True).pack(anchor=NW)
-        rno = Radiobutton(control, text='Disabled', variable=self.AutoCartBool, value=False).pack(anchor=NW)
+        Radiobutton(control, text='Disabled', variable=self.AutoCartBool, value=False).pack(anchor=NW)
         control.grid(row=self.Rows+2, column=4, columnspan=self.Cols-4)
-
 
         Label(control, font=('Helvetica', 14, 'bold'), fg='#000', text='Search Box').pack(anchor=NW)
         self.Entry = Entry(control, takefocus=True, width=45, bg='#000', fg='#33CCCC')
@@ -82,19 +80,11 @@ class Studio(Frame):
         self.ActiveGrid = grid
 
     def IsCartActive(self):
-        if self.ActiveCart is None:
-            return False
-        else:
-            return True
+        return self.ActiveCart is not None
 
     def SetActiveCart(self, cart):
-        if cart is None:
-            del cart
-            self.ActiveCart = None
-        else:
-            self.ActiveCart = cart
+        self.ActiveCart = cart
 
-    ## lovingly ripped off from ZA_Carts.BlankTheGrid
     def GenerateGrid(self):
         for row in range(1, self.Rows + 1):
             for col in range(1, self.Cols + 1):
@@ -128,7 +118,7 @@ class Studio(Frame):
 
     ### called by Meter when one cart is done
     def EndCallback(self):
-        if self.AutoCartBool.get() == 1:
+        if self.AutoCartBool.get() is True:
             self.ActiveCart.Stop()
             self.ActiveGrid.OnComplete()
         else:
