@@ -2,7 +2,6 @@
 
 from Tkinter import Tk, Label, StringVar, Button, Frame, SUNKEN, CENTER, Scrollbar, Listbox, END
 from ZAutomate_CartQueue import CartQueue
-from ZAutomate_DBInterface import DBInterface
 
 SIZE_X = 800
 SIZE_Y = 600
@@ -13,9 +12,7 @@ WINDOW_PARAMS = (str)(SIZE_X) + "x" + (str)(SIZE_Y) \
 
 class Automation():
     Master = None
-
     CartQueue = None
-    DBInterface = None
 
     # instantiate everything
     def __init__(self, master, width):
@@ -50,14 +47,6 @@ class Automation():
         ###                    for whenever the CartQueue is filled, refilled, updated,
         ###                    started, etc.
         self.CartQueue = CartQueue(self.Master, width, self.UIUpdate)
-
-        self.DBInterface = DBInterface()
-
-        ###YATES_COMMENT: Tries to restore the ShowID from previously playing automation.
-        ###                    Does so by trying to read from sid.conf.  If fails, then
-        ###                    DBInterface Rewinds the playlist date and tries for a
-        ###                    new show.
-        self.DBInterface.ShowID_Restore()
 
         ###YATES_COMMENT: Pretty sure the next 20 or so lines come from Tkinter
 
@@ -168,8 +157,7 @@ class Automation():
     # called at close program; cleans everything up
     def Bail(self):
         self.CartQueue.Dequeue()
-        self.DBInterface.ShowID_Save()
-
+        self.CartQueue.Save()
         self.Master.destroy()
 
 root = Tk()

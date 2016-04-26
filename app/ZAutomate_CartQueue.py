@@ -2,7 +2,7 @@ import datetime
 import thread
 import time
 from ZAutomate_Meter import Meter
-from ZAutomate_DBInterface import DBInterface
+import ZAutomate_DBInterface as database
 
 VALID_CART_TYPES = [
     'StationID',
@@ -29,6 +29,9 @@ PlistHistThreshold = 3
 
 class CartQueue():
 
+    ### current show ID
+    ShowID = -1
+
     ###Cart Array - Treated like a Queue with Out-Front at index-0
     Arr = None
     PlayedArr = None
@@ -48,6 +51,12 @@ class CartQueue():
     ThreadRunning = False
 
     def __init__(self, master, width, uiu):
+        ###YATES_COMMENT: Tries to restore the ShowID from previously playing automation.
+        ###                    Does so by trying to read from sid.conf.  If fails, then
+        ###                    DBInterface Rewinds the playlist date and tries for a
+        ###                    new show.
+        self.ShowID = database.ShowID_Restore()
+
         ###Instantiate new Array for Carts
         self.Arr = []
         self.PlayedArr = []
@@ -83,7 +92,6 @@ class CartQueue():
         print self.timeStamp() + " :=: CartQueue :: Extend :: Generating start times"
         self.GenStartTimes(lenOld)
 
-
     ###YATES_COMMENT: Dequeue's the 0th entry from the CartQueue::Arr array.
     ###                    Stops the cart first, then reset's the meter.
     def Dequeue(self):
@@ -96,6 +104,9 @@ class CartQueue():
         except IndexError:
             print self.timeStamp() + " :=: Closing... queue was empty... I hope you're debugging, Zach..."
         print self.timeStamp() + " :=: CQ :: Dequeue :: Leaving Dequeue..."
+
+    def Save(self):
+        database.ShowID_Save(self.ShowID)
 
     def IsCartInList(self, cartvar, Arr):
         result = 0
@@ -124,7 +135,7 @@ class CartQueue():
         return result
 
     ###YATES_COMMENT: Loops PlistGenThreshold - len(self.arr) times, calling
-    ###                    DBInterface().Get_Next_Playlist() and appending it to
+    ###                    database.Get_Next_Playlist() and appending it to
     ###                    the type code Cart array self.arr.
     ###                    PlistGenThreshold can be found in ZAutomate_Config.py
     ###                    Set to 10 when I started.
@@ -132,7 +143,9 @@ class CartQueue():
     def InitialFill(self):
         print self.timeStamp() + " :=: CartQueue :: InitialFill :: PlistGenThreshold = " + (str)(PlistGenThreshold)
         while len(self.Arr) < PlistGenThreshold:
-            self.Extend(DBInterface().Get_Next_Playlist())
+            show = database.Get_Next_Playlist(self.ShowID)
+            self.ShowID = show["showID"]
+            self.Extend(show["playlist"])
             print self.timeStamp() + " :=: CartQueue :: InitialFill enqueued... new length is "+(str)(len(self.Arr))
         self.UIUpdate()
 
@@ -143,9 +156,10 @@ class CartQueue():
         lenOld = len(self.Arr)
         print self.timeStamp() + " :=: CQ :: Dequeue :: PlayedArr is " + self.PrintPlayedArr()
         while len(self.Arr) < PlistGenThreshold:
-            refillList = DBInterface().Get_Next_Playlist()
-##            self.Extend( DBInterface().Get_Next_Playlist() )
-            for cart in refillList:
+            show = database.Get_Next_Playlist()
+            self.ShowID = show["showID"]
+
+            for cart in show["playlist"]:
                 ###Check to make sure the cart isn't already in Self.Arr, and hasn't been played in the
                 ###Last fill session
                 if self.IsCartInList(cart, self.PlayedArr) == 0 and self.IsCartInList(cart, self.Arr) == 0:
@@ -438,7 +452,7 @@ class CartQueue():
             ## get Carts to insert
 
             for cType in cartTypes:
-                cart = DBInterface().Cart_Request(cType)
+                cart = database.Cart_Request(cType)
                 print self.timeStamp() + " :=: CQ :: InsertCart :: Inserting cart " + cart.Issuer + " - " + cart.Title + " at index " + (str)(insertionCounter+offset) + " with start time " + self.Arr[insertionCounter].GetFmtTime()
                 # + " with start time: " + self.Arr[insertionCounter+offset].getTimeStruct()
                 self.Arr.insert(insertionCounter+offset, cart)
@@ -450,7 +464,7 @@ class CartQueue():
             print self.timeStamp() + " :=: CQ :: InsertCart :: bestDiffSoFar = " + (str)(bestDiffSoFar)
             print self.timeStamp() + " :=: CQ :: InsertCart :: best cart star time = : " + self.Arr[ctr].GetFmtTime()
             for cType in cartTypes:
-                cart = DBInterface().Cart_Request(cType)
+                cart = database.Cart_Request(cType)
                 print self.timeStamp() + " :=: CQ :: InsertCart :: Inserting cart " + cart.Issuer + " - " + cart.Title + " at index " + (str)(insertionCounter+offset) + " with start time " + self.Arr[insertionCounter].GetFmtTime()
                 # + " with start time: " + self.Arr[insertionCounter+offset].getTimeStruct()
                 self.Arr.insert(insertionCounter+offset, cart)
@@ -476,7 +490,7 @@ class CartQueue():
         try:
             self.Meter.Start()
             self.Arr[0].Start(self.Transition)
-            DBInterface().Logbook_Log(self.Arr[0].ID)
+            database.Logbook_Log(self.Arr[0].ID)
 
             print self.timeStamp() + " :=: \t" + self.Arr[0].Title + " by " + self.Arr[0].Issuer
         except IndexError:

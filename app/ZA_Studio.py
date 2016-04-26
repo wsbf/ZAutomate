@@ -5,7 +5,7 @@ import Tkinter
 from Tkinter import Tk, Frame, Label, BooleanVar, NW, Radiobutton, Entry, Button, S
 from ZAutomate_GridObj import GridObj
 from ZAutomate_Meter import Meter
-from ZAutomate_DBInterface import DBInterface
+import ZAutomate_DBInterface as database
 from ZAutomate_DualBox import DualBox
 
 METER_WIDTH = 1000
@@ -138,8 +138,7 @@ class Studio(Frame):
         query = self.Entry.get()
 
         if len(query) >= 3:
-            dbi = DBInterface()
-            self.SearchCarts = dbi.Studio_Search(query)
+            self.SearchCarts = database.Studio_Search(query)
 
             ## fill the DualBox with the search results
             arr = []

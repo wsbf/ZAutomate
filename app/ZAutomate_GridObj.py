@@ -1,5 +1,5 @@
 from Tkinter import Frame, Canvas
-from ZAutomate_DBInterface import DBInterface
+import ZAutomate_DBInterface as database
 
 CART_WIDTH = 200
 CART_HEIGHT = 75
@@ -137,7 +137,7 @@ class GridObj(Frame):
                 self.Parent.Meter.Start()
                 self.Cart.Start(self.Reset) ##self.OnComplete
                 self.Rec['bg'] = ColorNowPlaying
-                DBInterface().Logbook_Log(self.Cart.ID)
+                database.Logbook_Log(self.Cart.ID)
             pass
         ### click on an empty cart; add the clipboarded cart
         else:

@@ -2,7 +2,7 @@
 
 import random
 from Tkinter import Frame, Label, N, Button
-from ZAutomate_DBInterface import DBInterface
+import ZAutomate_DBInterface as database
 from ZAutomate_Gridder import Gridder
 from ZAutomate_GridObj import GridObj
 from ZAutomate_Meter import Meter
@@ -142,8 +142,7 @@ class CartMachine(Frame):
             progs[t] = self.Gridder.GridCorner(config[t]["corner"])
 
         # get a dictonary of carts for each cart type
-        DBI = DBInterface()
-        carts = DBI.CartMachine_Load()
+        carts = database.CartMachine_Load()
 
         # apply limiting and shuffling to each cart type
         for t in carts:
