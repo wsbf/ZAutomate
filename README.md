@@ -19,6 +19,8 @@ pylint **/*.py > lint.out
 
 ## TODO
 
+- make Auto-Slot Rotation work
+- review layering/communication between Player, Cart, and GridObj
 - separate Logbook_Log into log_cart and log_track
 - create separate classes for carts and tracks
 - resolve lint errors

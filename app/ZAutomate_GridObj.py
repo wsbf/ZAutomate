@@ -117,8 +117,6 @@ class GridObj(Frame):
             pass
 
     def LeftClick(self, clickEvent):
-        #print "LEFTCLICK"
-
         ### click on a non-empty cart
         if self.Cart is not None:
 
@@ -131,10 +129,6 @@ class GridObj(Frame):
 
             ### this cart isn't playing, and neither is any other; start!
             elif self.Parent.IsCartActive() is False:
-
-                # cart logging is done in Cart.Start
-                #print "Leftclick begin to play"
-
                 self.Playing = True
 
                 self.Parent.SetActiveCart(self.Cart)

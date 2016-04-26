@@ -12,7 +12,7 @@ class Player():
     Madrsc = None
 
     Thread = None
-    KeepGoing = False ## does not need a lock; only one writer (self.stop)
+    KeepGoing = False # may need a lock since stop and play_internal both write
     Devrsc = None
 
     def __init__(self, mad_file, filename):
@@ -36,7 +36,7 @@ class Player():
                 if buf is not None:
                     AODEV.play(buf, len(buf))
                 else:
-                    print self.timeStamp() + " :=: player_madao :: play_internal :: Tried to play, but buf is none"
+                    print self.timeStamp() + " :=: player_madao :: play_internal :: Buffer is empty"
                     break
         except:
             print self.timeStamp() + " :=: Player_madao :: play_internal :: Something went terribly terribly wrong."
@@ -44,6 +44,8 @@ class Player():
 
         if self.Callback is not None and self.KeepGoing is True:
             print self.timeStamp() + " :=: Player_Madao :: play_internal :: Executing callback"
+            self.SeekToFront()
+            self.KeepGoing = False
             self.Callback()
 
     def isplaying(self):
@@ -72,10 +74,7 @@ class Player():
             print self.timeStamp() + " :=: Player :: stop :: Tried to stop, but not playing"
             return
         self.KeepGoing = False
-        self.Callback = self.nothing
-
-    def nothing(self):
-        pass
+        self.Callback = None
 
     def SeekToFront(self):
         del self.Madrsc

@@ -116,7 +116,7 @@ class Studio(Frame):
             ##print "Setting cart index "+index+" to the clipboard"
             self.SelectedCart = self.SearchCarts[int(index)]
 
-    ### called by Meter when one cart is done
+    # TODO: Meter never calls this function, so auto-slot rotation doesn't work
     def EndCallback(self):
         if self.AutoCartBool.get() is True:
             self.ActiveCart.Stop()
