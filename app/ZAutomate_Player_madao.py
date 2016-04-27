@@ -52,10 +52,6 @@ class Player():
         return self.KeepGoing
 
     def play(self, callback=None):
-        if callback is None:
-            print self.timeStamp() + " :=: Player_Madao :: Play :: callback is none"
-        else:
-            print self.timeStamp() + " :=: Player_Madao :: Play :: callback is not none"
         self.Callback = callback
 
         if self.isplaying():

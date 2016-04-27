@@ -4,7 +4,7 @@ import time
 from ZAutomate_Meter import Meter
 import ZAutomate_DBInterface as database
 
-VALID_CART_TYPES = [
+CART_TYPES = [
     'StationID',
     'PSA',
     'Underwriting'
@@ -122,44 +122,34 @@ class CartQueue():
                     print self.timeStamp() + " :=: CQ :: Refill :: Found duplicate artist: " + (str)(cart.Issuer)
 
         print self.timeStamp() + " :=: CQ :: Refill :: Refilled Carts, new CartQueue Length is " + (str)(len(self.Arr))
-        self.GenStartTimes(lenOld - 1)
 
-        print self.timeStamp() + " :=: CQ :: Refill :: Removing Carts from PlayedList"
+        self.GenStartTimes(lenOld - 1)
         self.PlayedArr = []
         self.InsertAllCarts()
         #thread.exit()
         ###YATES_COMMENT: InsertAllCarts exits the thread
 
-    # is a callback ONLY on end of Cart
-    ###YATES_COMMENT: This is the transition function.  It's called, I believe,
-    ###                    when the Start/Stopping/Stop button is pressed to stop automation
-    ###                    or as a callback whenever a Cart finishes playing.
+    ### Transition to the next cart after a cart finishes.
+    ### This function is called when a cart ends or when it is stopped.
     def Transition(self):
-        print self.timeStamp() + " :=: CQ :: Transition :: Began to transition"
-        ###YATES_COMMENT: If queue is too small, start new thread to refill queue
-        print self.timeStamp() + " :=: CQ :: Transition :: Checking for refilling everything..."
+        # refill the queue if it is too short
         if len(self.Arr) < PLAYLIST_MIN_LENGTH:
-            print self.timeStamp() + " :=: CQ :: Transition :: Starting new Refill() thread"
             thread.start_new_thread(self.Refill, ())
-        print self.timeStamp() + " :=: CQ :: Transition :: Checking for refilling carts..."
-        ###YATES_COMMENT: If we've got 0 carts, then our playlist was significantly longer
-        ###               than an hour.  So lets refill some carts.
-        if self.CountCartsInQueue() == 0:
+
+        # add carts if there aren't any carts in the queue
+        carts = [c for c in self.Arr if c.cartType in CART_TYPES]
+
+        if len(carts) == 0:
             thread.start_new_thread(self.InsertAllCarts, ())
-        ###YATES_COMMENT: if self.KeepGoing is true, then we've just skipped a song.
-        ###                    dequeue the front song (dequeue stops playing) and start
-        ###                    the new front of queueue.
-        print self.timeStamp() + " :=: CQ :: Transition :: Checking for keeping on keeping on..."
+
+        self.Dequeue()
+
+        # start the next track if the current track ended
         if self.KeepGoing is True:
-            print self.timeStamp() + " :=: CQ :: Transition :: Continuing"
-            self.Dequeue()
             self.Start()
-        ###YATES_COMMENT: If self.KeepGoing is not true, then we've done StopNow!.
-        ###                    Remove the front of queue (stops the song from playing),
-        ###                    Clear out all the inserted carts, update the UI
+
+        # remove all carts if the queue was stopped
         else:
-            print self.timeStamp() + " :=: CQ :: Transition :: Stopping and clearing out first cart"
-            self.Dequeue()
             print self.timeStamp() + " :=: CQ :: Transition :: Clearing out PSAs, Undewriting, StationIDs"
             self.ClearInsertedCarts()
             self.UIUpdate()
@@ -416,10 +406,3 @@ class CartQueue():
 
     def timeStamp(self):
         return time.asctime(time.localtime(time.time()))
-
-    def CountCartsInQueue(self):
-        count = 0
-        for ctr in range(1, len(self.Arr)):
-            if self.Arr[ctr].cartType in VALID_CART_TYPES:
-                count = count + 1
-        return count
