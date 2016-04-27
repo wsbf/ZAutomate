@@ -22,10 +22,7 @@ AUTOMATION_CARTS = [
 	(['StationID', 'PSA'], 45, 300)
 ]
 
-### Automation will add to its playlist when there are this many or fewer tracks to go
-PlistGenThreshold = 10
-### How many prior carts to keep in the queue
-PlistHistThreshold = 3
+PLAYLIST_MIN_LENGTH = 10
 
 class CartQueue():
 
@@ -46,26 +43,18 @@ class CartQueue():
     ###                the current cart finishes.
     KeepGoing = False
 
-    Logger = None
     ###ThreadRunning - Boolean Semaphore for thread stuff.
     ThreadRunning = False
 
     def __init__(self, master, width, uiu):
-        ###YATES_COMMENT: Tries to restore the ShowID from previously playing automation.
-        ###                    Does so by trying to read from sid.conf.  If fails, then
-        ###                    DBInterface Rewinds the playlist date and tries for a
-        ###                    new show.
+        # get the saved show ID or a random new show ID
         self.ShowID = database.restore_show_id()
+        if self.ShowID is -1:
+            self.ShowID = database.get_new_show_id(-1)
 
-        ###Instantiate new Array for Carts
         self.Arr = []
         self.PlayedArr = []
-        ###Set UIUpdate Function pointer to passed callback function
         self.UIUpdate = uiu
-
-        ###YATES_COMMENT: What/Where is PlistHistThreshold?
-        ###YATES_ANSWER : ZAutomate_Config.py, currently set to 3;
-        self.HistLimit = PlistHistThreshold # GLOBAL
 
         ###YATES_COMMENT: What/Where is MeterFeeder?
         ###YATES_ANSWER: It's a Function or Macro, defined at the bottom,
@@ -73,73 +62,44 @@ class CartQueue():
         self.Meter = Meter(master, width - 10, self.MeterFeeder, self.Transition)
         self.Meter.grid(row=1, column=0, columnspan=4)
 
-    ###YATES_COMMENT: Extend takes an array of Carts and appends it to the end
-    ###                    of self.Arr.  cartArr's type code must be the same as Arr's
-    ###                    typecode.  Generates the timestamps for the start times
-    ###                    after appending the array.
-    def Extend(self, cartArr):
-        lenOld = len(self.Arr)
-        ###YATES_COMMENT: What does Array.extend(Array:cartArr) do?
-        ###Documentation: http://docs.python.org/library/array.html#array.array.extend
-        ###Append items from iterable to the end of the array.
-        ###If iterable is another array, it must have exactly the same type code;
-        ###if not, TypeError will be raised. If iterable is not an array,
-        ###it must be iterable and its elements must be the right type to be appended to the array.
-        try:
-            self.Arr.extend(cartArr)
-        except TypeError:
-            print self.timeStamp() + " :=: CQ : Tried to extend Arr, parameter not of same type-code"
-        print self.timeStamp() + " :=: CartQueue :: Extend :: Generating start times"
-        self.GenStartTimes(lenOld)
+    def GetQueue(self):
+        return self.Arr
 
-    ###YATES_COMMENT: Dequeue's the 0th entry from the CartQueue::Arr array.
-    ###                    Stops the cart first, then reset's the meter.
     def Dequeue(self):
-        try:
+        if len(self.Arr) > 0:
+            # stop the cart
             print self.timeStamp() + " :=: CQ :: Dequeue :: Stopping track " + self.Arr[0].PrintCart()
             self.Arr[0].Stop()
+
+            # move the cart to the played list
             print self.timeStamp() + " :=: CQ :: Dequeue :: Dequeuing " + self.Arr[0].PrintCart()
             self.PlayedArr.append(self.Arr.pop(0))
+
             self.Meter.Reset()
-        except IndexError:
-            print self.timeStamp() + " :=: Closing... queue was empty... I hope you're debugging, Zach..."
-        print self.timeStamp() + " :=: CQ :: Dequeue :: Leaving Dequeue..."
 
     def Save(self):
         database.save_show_id(self.ShowID)
 
-    def IsCartInList(self, cart, Arr):
-        if cart is None:
-            return False
-
-        for item in Arr:
-            if cart.Issuer is item.Issuer and cart.Title is item.Title:
-                print self.timeStamp() + " :=: CQ :: IsCartInList :: Found Cart " + (str)(cart.Issuer) + " - " + (str)(cart.Title)
-                return True
-
-        return False
-
-    def IsArtistInList(self, cart, Arr):
+    def IsArtistInList(self, cart, array):
         if cart is None:
             return True
 
-        for item in Arr:
+        for item in array:
             if cart.Issuer is item.Issuer:
-                print self.timeStamp() + " :=: CQ :: IsArtistInList :: Found Artist " + (str)(cart.Issuer)
                 return True
 
         return False
 
-    ###YATES_COMMENT: Loops PlistGenThreshold - len(self.arr) times, calling
-    ###                    database.get_next_playlist() and appending it to
-    ###                    the type code Cart array self.arr.
-    ###                    Calls the UIUpdate callback when done.
+    ### Retrieve playlists until the queue length is at least PLAYLIST_MIN_LENGTH
     def InitialFill(self):
-        print self.timeStamp() + " :=: CartQueue :: InitialFill :: PlistGenThreshold = " + (str)(PlistGenThreshold)
-        while len(self.Arr) < PlistGenThreshold:
+        while len(self.Arr) < PLAYLIST_MIN_LENGTH:
             show = database.get_next_playlist(self.ShowID)
             self.ShowID = show["showID"]
-            self.Extend(show["playlist"])
+
+            lenOld = len(self.Arr)
+            self.Arr.extend(show["playlist"])
+            self.GenStartTimes(lenOld)
+
             print self.timeStamp() + " :=: CartQueue :: InitialFill enqueued... new length is "+(str)(len(self.Arr))
         self.UIUpdate()
 
@@ -147,29 +107,25 @@ class CartQueue():
     ###                    and calls InsertAllCarts before calling the UIUPdate callback
     def Refill(self):
         print self.timeStamp() + " :=: CQ :: Refill :: Trying to refill the cart"
+
         lenOld = len(self.Arr)
-        print self.timeStamp() + " :=: CQ :: Dequeue :: PlayedArr is " + self.PrintPlayedArr()
-        while len(self.Arr) < PlistGenThreshold:
+
+        while len(self.Arr) < PLAYLIST_MIN_LENGTH:
             show = database.get_next_playlist(self.ShowID)
             self.ShowID = show["showID"]
 
+            # check whether the cart artist is already in the queue or played list
             for cart in show["playlist"]:
-                ###Check to make sure the cart isn't already in Self.Arr, and hasn't been played in the
-                ###Last fill session
-                if not self.IsCartInList(cart, self.PlayedArr) and not self.IsCartInList(cart, self.Arr):
-                    ###Check to see if the artist is already in the list.
-                    if not self.IsArtistInList(cart, self.Arr) and not self.IsArtistInList(cart, self.PlayedArr):
-                        self.Arr.append(cart)
-                    else:
-                        print self.timeStamp() + " :=: CQ :: Refill :: Checking for existing Artist :: found duplicate artist: " + (str)(cart.Issuer)
+                if not self.IsArtistInList(cart, self.PlayedArr) and not self.IsArtistInList(cart, self.Arr):
+                    self.Arr.append(cart)
                 else:
-                    print self.timeStamp() + " :=: CQ :: Refill :: Checking for existing track :: found duplicate track: " + (str)(cart.Issuer) + " - " + (str)(cart.Title)
+                    print self.timeStamp() + " :=: CQ :: Refill :: Found duplicate artist: " + (str)(cart.Issuer)
+
         print self.timeStamp() + " :=: CQ :: Refill :: Refilled Carts, new CartQueue Length is " + (str)(len(self.Arr))
-        print self.timeStamp() + " :=: CQ :: Refill :: Calling GenStartTimes(" + (str)(lenOld) + ")"
         self.GenStartTimes(lenOld - 1)
+
         print self.timeStamp() + " :=: CQ :: Refill :: Removing Carts from PlayedList"
         self.PlayedArr = []
-        print self.timeStamp() + " :=: CQ :: Refill :: Calling InsertAllCarts()"
         self.InsertAllCarts()
         #thread.exit()
         ###YATES_COMMENT: InsertAllCarts exits the thread
@@ -182,7 +138,7 @@ class CartQueue():
         print self.timeStamp() + " :=: CQ :: Transition :: Began to transition"
         ###YATES_COMMENT: If queue is too small, start new thread to refill queue
         print self.timeStamp() + " :=: CQ :: Transition :: Checking for refilling everything..."
-        if len(self.Arr) < PlistGenThreshold:
+        if len(self.Arr) < PLAYLIST_MIN_LENGTH:
             print self.timeStamp() + " :=: CQ :: Transition :: Starting new Refill() thread"
             thread.start_new_thread(self.Refill, ())
         print self.timeStamp() + " :=: CQ :: Transition :: Checking for refilling carts..."
@@ -229,80 +185,26 @@ class CartQueue():
                 ctr += 1
         print self.timeStamp() + " :=: CQ :: ClearInsertedCarts :: Exited Function"
 
-    ###YATES_COMMENT: This is the first good comment I've seen.
-
     ## Populate the TimeStruct inside each Cart. This is useful for PSA insertion, etc.
     ## Should be called when carts/songs are added to (or removed from?) playlist
     ## It is regenerated on every start and on every transition, which makes it accurate.
-    ## It can be run to exclude the beginning of the Queue, with the startNdx parameter
-    def GenStartTimes(self, startNdx=0):
-        print self.timeStamp() + " :=: CQ :: GenStartTimes :: Entered Function"
-
-        ###YATES_COMMENT: This works well as long as startNdx=0.
-        ###                    If startNdx > 0, we need to calculate the time offset
-        ###                    to the trakc we're starting to generate times for.
-        ###                    Something like...
-        #  offsetStartTime = Arr[0].GetTimeStruct();
-        ###    Nota Bene: Cart::GetTimeStruct() returns the starting time for song.
-        #  if(startNdx > 0)
-        #      for(int i = 1; i < startNdx; i++)
-        #          offsetStartTime += self.Arr[i].GetTimeStruct
-        #
-        ## time_struct representing this instant - only used if startNdx is 0
+    ## It can be run to exclude the beginning of the Queue, with the beginIndex parameter
+    def GenStartTimes(self, beginIndex=0):
         baseTime = time.localtime()
 
-        ###YATES_COMMENT: Should ctr be initialized before this?  For clarity?
-
-        ### Also, the second if statement seems a little clunky given that the loop
-        ### should never iterate so that ctr >= len(self.Arr).
-        for ctr in range(startNdx, len(self.Arr)):
-            ## for the first cart in the queue, use the current time as the base (above)
-            if ctr > 0:
-                ## get the prior cart's start time_struct and length in seconds
-                ###YATES_COMMENT: NOTA BENE: Cart::GetTimeStruct() returns start.
-                lastCartStart = self.Arr[ctr-1].GetTimeStruct()
-                ###YATES_COMMENT: NOTA BENE: MeterFeeder() returns a n-Tuple of the
-                ###                    form ( time_elapsed(), length(), Title, Issuer, ID, Type )
-                ###                    where Title is SongTitle, Issuer is Artist, ID is SongID, Type is Rotation Type
-                ###                    for songs.
-                lastCartSecs = self.Arr[ctr-1].MeterFeeder()[1] / 1000
-
+        for i in range(beginIndex, len(self.Arr)):
+            ## for each cart after the first, compute the start time
+            if i > 0:
                 ## compute the start of current cart in seconds, then convert to time_struct
-                ### YATES_COMMENT: http://docs.python.org/library/time.html#time.mktime
-                ### This is the inverse function of localtime().
-                ### Its argument is the struct_time
-                ### It returns a floating point number, for compatibility with time().
-                ### If the input value cannot be represented as a valid time,
-                ### either OverflowError or ValueError will be raised
-                ### (which depends on whether the invalid value is caught by Python or the underlying C libraries).
-                ### The earliest date for which it can generate a time is platform-dependent.
-                try:
-                    newSecs = time.mktime(lastCartStart) + lastCartSecs
-                except TypeError:
-                    print self.timeStamp() + " :=: CQ :: GenStartTimes("+(str)(startNdx)+") :: TypeError Encountered"
-                    print self.timeStamp() + " :=: CQ :: GenStartTimes("+(str)(startNdx)+") :: ctr-1 = " + (str)(ctr-1)
-                    print self.timeStamp() + " :=: CQ :: GenStartTimes("+(str)(startNdx)+") :: lastCartStart = " + (str)(lastCartStart)
-                    print self.timeStamp() + " :=: CQ :: GenStartTimes("+(str)(startNdx)+") :: lastCartSecs = " + (str)(lastCartSecs)
-                    print self.timeStamp() + " :=: CQ :: GenStartTimes("+(str)(startNdx)+") :: self.Arr[ctr-1] = " + (str)(self.Arr[ctr-1])
-                    print self.timeStamp() + " :=: CQ :: GenStartTimes("+(str)(startNdx)+") :: " + self.Arr[ctr-1].PrintCart()
-                except IndexError:
-                    print self.timeStamp() + " :=: CQ :: GenStartTimes("+(str)(startNdx)+") :: IndexError Encountered"
-                    print self.timeStamp() + " :=: CQ :: GenStartTimes("+(str)(startNdx)+") :: ctr-1 = " + (str)(ctr-1)
-                    print self.timeStamp() + " :=: CQ :: GenStartTimes("+(str)(startNdx)+") :: lastCartStart = " + (str)(lastCartStart)
-                    print self.timeStamp() + " :=: CQ :: GenStartTimes("+(str)(startNdx)+") :: lastCartSecs = " + (str)(lastCartSecs)
-
-
-                ###YATES_COMMENT: localtime returns the local time + parameter offset (seconds).
-                ###                    returns local time if parameter is omitted or 0.
-                baseTime = time.localtime(newSecs)
+                prevStartTime = self.Arr[i - 1].GetStartTime()
+                prevLength = self.Arr[i - 1].MeterFeeder()[1] / 1000
+                startTime = time.mktime(prevStartTime) + prevLength
+                baseTime = time.localtime(startTime)
 
             ## set the current cart's starting time
-            if (ctr) < len(self.Arr):
-                self.Arr[ctr].SetTimeStruct(baseTime)
-        print self.timeStamp() + " :=: CQ :: GenStartTimes :: Exiting function"
+            self.Arr[i].SetStartTime(baseTime)
 
     ## Called as a new thread to insert carts
-
     def InsertAllCarts(self):
         ### Check Semaphore so we don't get deadlocks/livelocks.
         if self.ThreadRunning is True:
@@ -376,7 +278,7 @@ class CartQueue():
         ###                    closest start time to the start time of the cart (cart)
         ###                    which we would like to insert.
         for ctr in range(1, len(self.Arr)):
-            cartStart = self.Arr[ctr].GetTimeStruct()
+            cartStart = self.Arr[ctr].GetStartTime()
             if cartStart is None:
                 print self.timeStamp() + " :=: CQ :: InsertCart :: Null Pointer Error :: InsertCart failed!"
                 return
@@ -447,7 +349,7 @@ class CartQueue():
 
             for cType in cartTypes:
                 cart = database.get_cart(cType)
-                print self.timeStamp() + " :=: CQ :: InsertCart :: Inserting cart " + cart.Issuer + " - " + cart.Title + " at index " + (str)(insertionCounter+offset) + " with start time " + self.Arr[insertionCounter].GetFmtTime()
+                print self.timeStamp() + " :=: CQ :: InsertCart :: Inserting cart " + cart.Issuer + " - " + cart.Title + " at index " + (str)(insertionCounter+offset) + " with start time " + self.Arr[insertionCounter].GetFmtStartTime()
                 # + " with start time: " + self.Arr[insertionCounter+offset].getTimeStruct()
                 self.Arr.insert(insertionCounter+offset, cart)
                 offset += 1
@@ -456,19 +358,16 @@ class CartQueue():
         else:
             print self.timeStamp() + " :=: CQ :: InsertCart :: Could not find a spot to insert carts"
             print self.timeStamp() + " :=: CQ :: InsertCart :: bestDiffSoFar = " + (str)(bestDiffSoFar)
-            print self.timeStamp() + " :=: CQ :: InsertCart :: best cart star time = : " + self.Arr[ctr].GetFmtTime()
+            print self.timeStamp() + " :=: CQ :: InsertCart :: best cart star time = : " + self.Arr[ctr].GetFmtStartTime()
             for cType in cartTypes:
                 cart = database.get_cart(cType)
-                print self.timeStamp() + " :=: CQ :: InsertCart :: Inserting cart " + cart.Issuer + " - " + cart.Title + " at index " + (str)(insertionCounter+offset) + " with start time " + self.Arr[insertionCounter].GetFmtTime()
+                print self.timeStamp() + " :=: CQ :: InsertCart :: Inserting cart " + cart.Issuer + " - " + cart.Title + " at index " + (str)(insertionCounter+offset) + " with start time " + self.Arr[insertionCounter].GetFmtStartTime()
                 # + " with start time: " + self.Arr[insertionCounter+offset].getTimeStruct()
                 self.Arr.insert(insertionCounter+offset, cart)
                 offset += 1
             self.GenStartTimes(insertionCounter)
 
             self.Arr[ctr].PrintCart()
-
-    def Length(self):
-        return len(self.Arr)
 
     ###YATES_COMMENT: Function to start playing the first cart.     Maybe called
     ###                    by a module to start songs, or as a... callback? when the
@@ -510,30 +409,10 @@ class CartQueue():
 
     ## passed to Meter on instantiation
     def MeterFeeder(self):
-        try:
+        if len(self.Arr) > 0:
             return self.Arr[0].MeterFeeder()
-        except IndexError:
-            print self.timeStamp() + " :=: Index out of bounds error, len(self.Arr) = " + (str)(len(self.Arr))
-
-    ## called by Automation to fill up the playlist box
-    def GetArray(self):
-        ret = []
-        for cart in self.Arr:
-            ret.append((cart.GetFmtTime(), cart.Title, cart.Issuer))
-        return ret
-
-    ###YATES_METHOD
-    def PrintPlayedArr(self):
-        playedStr = ""
-        for cart in self.PlayedArr:
-            playedStr = playedStr + cart.PrintCart() + "\n"
-        return playedStr
-
-    def PrintArr(self):
-        arrStr = ""
-        for cart in self.Arr:
-            arrStr = arrStr + cart.PrintCart() + "\n"
-        return arrStr
+        else:
+            return ("-:--", "-:--", "", "", "", "")
 
     def timeStamp(self):
         return time.asctime(time.localtime(time.time()))

@@ -32,13 +32,13 @@ class Cart():
         self.Issuer = issuer.strip()
         self.cartType = ctype.strip()
 
-    def SetTimeStruct(self, startTime):
+    def SetStartTime(self, startTime):
         self.TimeStart = startTime
 
-    def GetTimeStruct(self):
+    def GetStartTime(self):
         return self.TimeStart
 
-    def GetFmtTime(self):
+    def GetFmtStartTime(self):
         if self.TimeStart is not None:
             return time.strftime('%I:%M:%S %p', self.TimeStart)
         else:

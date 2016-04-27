@@ -36,7 +36,7 @@ def get_new_show_id(showID):
         return -1
 
 def restore_show_id():
-    """Attempt to restore the show ID that was saved to the config file."""
+    """Attempt to read the show ID that was saved to the config file."""
 
     if os.access(FILE_AUTOCONF, os.R_OK) is True:
         f = open(FILE_AUTOCONF, "r")
@@ -45,7 +45,7 @@ def restore_show_id():
         if showID.isdigit():
             return (int)(showID)
 
-    return get_new_show_id(-1)
+    return -1
 
 def save_show_id(showID):
     """Save a show ID to the config file."""
@@ -120,8 +120,6 @@ def get_next_playlist(showID):
         show_res = res.json()
 
         show["showID"] = show_res["showID"]
-
-        print "DBInterface :: Get_Next_Playlist() :: Enqueueing new showID " + (str)(show["showID"])
 
         for t in show_res["playlist"]:
             # TODO: move pathname building to Track constructor

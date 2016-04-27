@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-from Tkinter import Tk, Label, StringVar, Button, Frame, SUNKEN, CENTER, Scrollbar, Listbox, END
+import Tkinter
+from Tkinter import Tk, Label, StringVar, Button, Frame, Scrollbar, Listbox
 from ZAutomate_CartQueue import CartQueue
 
 SIZE_X = 800
@@ -14,10 +15,9 @@ class Automation():
     Master = None
     CartQueue = None
 
-    # instantiate everything
     def __init__(self, master, width):
-
         self.Master = master
+        self.CartQueue = CartQueue(self.Master, width, self.UIUpdate)
 
         ###YATES_COMMENT: This may be a dead variable.  No one ever seems to be
         ###                    using self.font, but rather font=('Helvetica', '12', 'bold')
@@ -26,10 +26,10 @@ class Automation():
         ###               error, where as saying font=('Helvetica', 12, 'bold')
         ###               does not.
         #self.font = ('Helvetica', 12, 'bold')
+
         ###YATES_COMMENT: Sets the title and its attributes for the Window.
         self.Title = Label(self.Master, fg='#000', font=('Helvetica', 36, 'bold italic'), text='ZAutomate :: Automation')
         self.Title.grid(row=0, column=0, columnspan=3)
-
 
         ###YATES_COMMENT: Initializes the START button on start up.
         ###                    textvariable=self.ButtonContent is how the button text is populated
@@ -42,19 +42,11 @@ class Automation():
 
         self.Button.grid(row=0, column=3)
 
-        ###YATES_COMMENT: Initializes the CartQueue object with a reference master (What is master?)
-        ###                    self.UIUpdate sets the callback function
-        ###                    for whenever the CartQueue is filled, refilled, updated,
-        ###                    started, etc.
-        self.CartQueue = CartQueue(self.Master, width, self.UIUpdate)
-
-        ###YATES_COMMENT: Pretty sure the next 20 or so lines come from Tkinter
-
         ###YATES_COMMENT: Allocates a new frame, and populates the frame with labels for Cue Time, Track Title, Artist Name
-        PlistFr = Frame(self.Master, bd=2, relief=SUNKEN)
-        Label(PlistFr, font=('Helvetica', 12, 'bold'), anchor=CENTER, width=16, text='Cue Time').grid(row=0, column=0)
-        Label(PlistFr, font=('Helvetica', 12, 'bold'), anchor=CENTER, width=32, text='Track Title').grid(row=0, column=1)
-        Label(PlistFr, font=('Helvetica', 12, 'bold'), anchor=CENTER, width=32, text='Artist Name').grid(row=0, column=2)
+        PlistFr = Frame(self.Master, bd=2, relief=Tkinter.SUNKEN)
+        Label(PlistFr, font=('Helvetica', 12, 'bold'), anchor=Tkinter.CENTER, width=16, text='Cue Time').grid(row=0, column=0)
+        Label(PlistFr, font=('Helvetica', 12, 'bold'), anchor=Tkinter.CENTER, width=32, text='Track Title').grid(row=0, column=1)
+        Label(PlistFr, font=('Helvetica', 12, 'bold'), anchor=Tkinter.CENTER, width=32, text='Artist Name').grid(row=0, column=2)
 
         InPlFr = Frame(PlistFr)
         scroll = Scrollbar(InPlFr, orient="vertical", command=self.ScrollHandler)
@@ -70,7 +62,6 @@ class Automation():
         InPlFr.grid(row=1, column=0, columnspan=3)
         PlistFr.grid(row=4, column=0, columnspan=4)
 
-        ###YATES_COMMENT: Initialize the CartQueue with stuff to play.
         self.CartQueue.InitialFill()
 
     ###YATES_COMMENT: Event Handler for scrolling through the three Windows.
@@ -124,23 +115,19 @@ class Automation():
         self.CartQueue.Transition()
 
     # callback: when anything happens in CartQueue, run this to update the UI's state
-    ###YATES_COMMENT: This is the callback fucntion from the CartQueue that updates
-    ###                    The UI.
     def UIUpdate(self):
-
         ## clear, then reset, the playlist
-        ###YATES_COMMENT: What/Where is END?
-        ###YATES_ANSWER:  END is a constant/macro from Tkinter whch means the end
-        ###                    of some kind of structure.
-        ###                    So, these next three lines empty out the Cue/Track/ArtistBox
-        self.CueBox.delete(0, END)
-        self.TrackBox.delete(0, END)
-        self.ArtistBox.delete(0, END)
+        self.CueBox.delete(0, Tkinter.END)
+        self.TrackBox.delete(0, Tkinter.END)
+        self.ArtistBox.delete(0, Tkinter.END)
+
         ###YATES_COMMENT: Appends the CueTime, TrackName, ArtistName to each of the Boxes.
-        for item in self.CartQueue.GetArray():
-            self.CueBox.insert(END, item[0])
-            self.TrackBox.insert(END, item[1])
-            self.ArtistBox.insert(END, item[2])
+        items = [(c.GetFmtStartTime(), c.Title, c.Issuer) for c in self.CartQueue.GetQueue()]
+
+        for item in items:
+            self.CueBox.insert(Tkinter.END, item[0])
+            self.TrackBox.insert(Tkinter.END, item[1])
+            self.ArtistBox.insert(Tkinter.END, item[2])
 
         ## reset (?) the button
         ###YATES_COMMENT: Presumably, if IsStopping is true, we've pressed the Stop button
@@ -154,7 +141,6 @@ class Automation():
         ###What is the state of IsStopping after this?  Shouldn't IsStopping be
         ###false, as the UIUpdate is called when we stop?
 
-    # called at close program; cleans everything up
     def Bail(self):
         self.CartQueue.Dequeue()
         self.CartQueue.Save()
