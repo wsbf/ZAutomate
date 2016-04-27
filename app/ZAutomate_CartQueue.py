@@ -1,8 +1,10 @@
 import datetime
-import thread
+# import thread
 import time
 from ZAutomate_Meter import Meter
 import ZAutomate_DBInterface as database
+
+# TODO: review thread management
 
 CART_TYPES = [
     'StationID',
@@ -43,8 +45,8 @@ class CartQueue():
     ###                the current cart finishes.
     KeepGoing = False
 
-    ###ThreadRunning - Boolean Semaphore for thread stuff.
-    ThreadRunning = False
+    ### lock for the queue
+    # QueueLock = None
 
     def __init__(self, master, width, uiu):
         # get the saved show ID or a random new show ID
@@ -56,6 +58,8 @@ class CartQueue():
         self.PlayedArr = []
         self.UIUpdate = uiu
 
+        # self.QueueLock = thread.allocate_lock()
+
         ###YATES_COMMENT: What/Where is MeterFeeder?
         ###YATES_ANSWER: It's a Function or Macro, defined at the bottom,
         ###                  it returns self.Arr[0].MeterFeeder();
@@ -64,6 +68,12 @@ class CartQueue():
 
     def GetQueue(self):
         return self.Arr
+
+    def IsPlaying(self):
+        return self.Arr[0].IsPlaying()
+
+    def IsStopping(self):
+        return not self.KeepGoing
 
     def Dequeue(self):
         if len(self.Arr) > 0:
@@ -90,90 +100,83 @@ class CartQueue():
 
         return False
 
-    ### Retrieve playlists until the queue length is at least PLAYLIST_MIN_LENGTH
-    def InitialFill(self):
+    def AddTracks(self):
+        beginIndex = len(self.Arr)
+
         while len(self.Arr) < PLAYLIST_MIN_LENGTH:
+            # retrieve playlist from database
             show = database.get_next_playlist(self.ShowID)
             self.ShowID = show["showID"]
 
-            lenOld = len(self.Arr)
-            self.Arr.extend(show["playlist"])
-            self.GenStartTimes(lenOld)
+            # add each track whose artist isn't already in the queue or playlist list
+            self.Arr.extend([t for t in show["playlist"] if not self.IsArtistInList(t, self.PlayedArr) and not self.IsArtistInList(t, self.Arr)])
 
-            print self.timeStamp() + " :=: CartQueue :: InitialFill enqueued... new length is "+(str)(len(self.Arr))
-        self.UIUpdate()
+            print self.timeStamp() + " :=: CartQueue :: Enqueued tracks, length is " + (str)(len(self.Arr))
 
-    ###YATES_COMMENT: Same as InitialFill, but also regenerates StartTimes,
-    ###                    and calls InsertAllCarts before calling the UIUPdate callback
+        self.GenStartTimes(beginIndex)
+
+    ## Refill the playlist with tracks
+    ## This function also clears the played list and inserts carts.
     def Refill(self):
-        print self.timeStamp() + " :=: CQ :: Refill :: Trying to refill the cart"
+        # self.QueueLock.acquire()
 
-        lenOld = len(self.Arr)
-
-        while len(self.Arr) < PLAYLIST_MIN_LENGTH:
-            show = database.get_next_playlist(self.ShowID)
-            self.ShowID = show["showID"]
-
-            # check whether the cart artist is already in the queue or played list
-            for cart in show["playlist"]:
-                if not self.IsArtistInList(cart, self.PlayedArr) and not self.IsArtistInList(cart, self.Arr):
-                    self.Arr.append(cart)
-                else:
-                    print self.timeStamp() + " :=: CQ :: Refill :: Found duplicate artist: " + (str)(cart.Issuer)
-
-        print self.timeStamp() + " :=: CQ :: Refill :: Refilled Carts, new CartQueue Length is " + (str)(len(self.Arr))
-
-        self.GenStartTimes(lenOld - 1)
+        self.AddTracks()
         self.PlayedArr = []
-        self.InsertAllCarts()
-        #thread.exit()
-        ###YATES_COMMENT: InsertAllCarts exits the thread
+
+        # self.QueueLock.release()
+        self.InsertCarts()
+
+        # InsertCarts() exits the thread
+        # thread.exit()
 
     ### Transition to the next cart after a cart finishes.
     ### This function is called when a cart ends or when it is stopped.
     def Transition(self):
+        self.Dequeue()
+
         # refill the queue if it is too short
         if len(self.Arr) < PLAYLIST_MIN_LENGTH:
-            thread.start_new_thread(self.Refill, ())
+            print self.timeStamp() + " :=: CQ :: Transition :: Refilling the playlist"
+            # thread.start_new_thread(self.Refill, ())
+            self.Refill()
 
         # add carts if there aren't any carts in the queue
         carts = [c for c in self.Arr if c.cartType in CART_TYPES]
 
-        if len(carts) == 0:
-            thread.start_new_thread(self.InsertAllCarts, ())
-
-        self.Dequeue()
+        if len(carts) is 0:
+            print self.timeStamp() + " :=: CQ :: Transition :: Refilling carts"
+            # thread.start_new_thread(self.InsertCarts, ())
+            self.InsertCarts()
 
         # start the next track if the current track ended
         if self.KeepGoing is True:
+            print self.timeStamp() + " :=: CQ :: Transition :: Starting the next track"
             self.Start()
 
         # remove all carts if the queue was stopped
         else:
-            print self.timeStamp() + " :=: CQ :: Transition :: Clearing out PSAs, Undewriting, StationIDs"
-            self.ClearInsertedCarts()
+            print self.timeStamp() + " :=: CQ :: Transition :: Removing all carts"
+            self.RemoveCarts()
             self.UIUpdate()
 
-    ## called twice: once on stopping and once at InsertAllCarts
-    def ClearInsertedCarts(self):
-        print self.timeStamp() + " :=: CQ :: ClearInsertedCarts :: Entered Function"
+    ## Remove all carts from the queue.
+    ## This function is called after a hard stop and before new carts
+    ## are inserted. The queue must be cleared at these times in order
+    ## to ensure that carts are played at correct times.
+    def RemoveCarts(self):
+        # TODO: this line is sufficient if current track is separated from queue
+        # self.Arr = [c for c in self.Arr if cart.cartType not in CART_TYPES]
+
         if self.Arr[0].IsPlaying():
-            ctr = 1
+            i = 1
         else:
-            ctr = 0
-        #self.Arr = [ cart for cart in self.Arr[1:len(self.Arr)] if cart.Type not in VALID_CART_TYPES]
-        print self.timeStamp() + " :=: CQ :: ClearInsertedCarts :: Entering Loop"
-        while ctr < len(self.Arr):
-            ##print (str)(ctr) + " :: " + (str)(size)
-            ##print (str)(ctr) + " :: " + self.Arr[ctr].Type + " :: " + self.Arr[ctr].Title
-            print self.timeStamp() + " :=: CQ :: ClearInsertedCarts :: Loop :: Type is " + (str)(self.Arr[ctr].cartType)
-            if self.Arr[ctr].cartType in VALID_CART_TYPES:
-                print self.timeStamp() + " :=: \t\tDeleting "+(str)(ctr)
-        #        #del self.Arr[ctr]
-                self.Arr.pop(ctr)
+            i = 0
+
+        while i < len(self.Arr):
+            if self.Arr[i].cartType in CART_TYPES:
+                self.Arr.pop(i)
             else:
-                ctr += 1
-        print self.timeStamp() + " :=: CQ :: ClearInsertedCarts :: Exited Function"
+                i += 1
 
     ## Populate the TimeStruct inside each Cart. This is useful for PSA insertion, etc.
     ## Should be called when carts/songs are added to (or removed from?) playlist
@@ -183,9 +186,9 @@ class CartQueue():
         baseTime = time.localtime()
 
         for i in range(beginIndex, len(self.Arr)):
-            ## for each cart after the first, compute the start time
+            ## for each cart after the first, add the length of the previous
+            ## track to produce the start time
             if i > 0:
-                ## compute the start of current cart in seconds, then convert to time_struct
                 prevStartTime = self.Arr[i - 1].GetStartTime()
                 prevLength = self.Arr[i - 1].MeterFeeder()[1] / 1000
                 startTime = time.mktime(prevStartTime) + prevLength
@@ -194,30 +197,20 @@ class CartQueue():
             ## set the current cart's starting time
             self.Arr[i].SetStartTime(baseTime)
 
-    ## Called as a new thread to insert carts
-    def InsertAllCarts(self):
-        ### Check Semaphore so we don't get deadlocks/livelocks.
-        if self.ThreadRunning is True:
-            ###YATES_COMMENT: For the record, this is horribly bad and why the application
-            ###               Randomly exits from time to time.
-            #thread.exit()
-            return
-        else:
-            self.ThreadRunning = True
+    ## Refresh the queue with new carts.
+    ## This function is called when the queue is started and when the queue
+    ## runs out of carts. It must always be called from a thread other than
+    ## the main thread.
+    def InsertCarts(self):
+        # self.QueueLock.acquire()
 
-        ###Clear all the carts first.
-        print self.timeStamp() + " :=: CQ :: InsertAllCarts :: Entered Function"
-        self.ClearInsertedCarts()
-
-        print self.timeStamp() + " :=: CQ :: InsertAllCarts :: Looping over Carts to insert"
+        self.RemoveCarts()
         for entry in AUTOMATION_CARTS:
             self.InsertCart(entry[0], entry[1], entry[2])
-        ###Update GUI
         self.UIUpdate()
-        ###Unlock Semaphore
-        self.ThreadRunning = False
-        print self.timeStamp() + " :=: CQ :: InsertAllCarts :: Exiting Function"
-        thread.exit()
+
+        # self.QueueLock.release()
+        # thread.exit()
 
     ## Make sure we meet the FCC station id rule (and our own rules!)
     ## This function works on a one-hour interval
@@ -380,22 +373,17 @@ class CartQueue():
             print self.timeStamp() + " :=: CQ :: Start :: ERROR :: Queue is empty!!!"
             return
 
-        ###If called by button click, InsertAllCarts under a new thread.
+        ###If called by button click, InsertCarts under a new thread.
         if click is True:
-            print self.timeStamp() + " :=: CQ :: Start :: Starting new InsertAllCarts() Thread"
-            thread.start_new_thread(self.InsertAllCarts, ())
+            print self.timeStamp() + " :=: CQ :: Start :: Starting new InsertCarts() Thread"
+            # thread.start_new_thread(self.InsertCarts, ())
+            self.InsertCarts()
 
         self.UIUpdate()
 
     def StopSoon(self):
         print self.timeStamp() + " :=: CQ :: StopSoon :: Slow stop registered"
         self.KeepGoing = False
-
-    def IsPlaying(self):
-        return self.Arr[0].IsPlaying()
-
-    def IsStopping(self):
-        return not self.KeepGoing
 
     ## passed to Meter on instantiation
     def MeterFeeder(self):

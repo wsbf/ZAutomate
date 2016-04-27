@@ -62,7 +62,8 @@ class Automation():
         InPlFr.grid(row=1, column=0, columnspan=3)
         PlistFr.grid(row=4, column=0, columnspan=4)
 
-        self.CartQueue.InitialFill()
+        self.CartQueue.AddTracks()
+        self.UIUpdate()
 
     ###YATES_COMMENT: Event Handler for scrolling through the three Windows.
     def ScrollHandler(self, *args):

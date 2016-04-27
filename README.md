@@ -19,6 +19,7 @@ pylint **/*.py > lint.out
 
 ## TODO
 
+- analyze the insertion/removal of carts, thread management during Automation
 - make Auto-Slot Rotation work
 - review layering/communication between Player, Cart, and GridObj
 - separate Logbook_Log into log_cart and log_track
