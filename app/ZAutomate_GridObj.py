@@ -1,24 +1,37 @@
 from Tkinter import Frame, Canvas
 import ZAutomate_DBInterface as database
 
-CART_WIDTH = 200
+CART_WIDTH = 175
 CART_HEIGHT = 75
 
-ColorNowPlaying = "#00FF00"
-ColorReady = "#009999"
-##ColorCartContainer = "#FF7400"
+# TODO: move all colors to constants
 
-## what about T R O
-
-## UNDERWRITING PSA STATION PROMOTION
-## T R N H M L O
-
-ColorTypesNew = dict(UNDERWRITING="#BF5FFF", PSA="#0099A3", STATION="#FF6600",
-    N='#FF1010', H='#FF4242', M='#FF6969', L='#8D0000', O='#CCC')
-## can now add codes T R N H M L O
-ColorTypesPlayed = dict(UNDERWRITING="#9400D3", PSA="#006A33", STATION="#8B4500",
-    N='#2258D5', H='#4D7CE6', M='#6D92E6', L='#005280', O='#999' )
-
+COLOR_PLAYING = "#00FF00"
+COLOR_READY = "#009999"
+COLOR_TYPES_NEW = {
+    "PSA": "#0099A3",
+    "Underwriting": "#BF5FFF",
+    "StationID": "#FF6600",
+    "Promotion": "#888888",  # TODO: set Promotion color
+    "R": "#888888",          # TODO: set Recently Reviewed color
+    "N": "#FF1010",
+    "H": "#FF4242",
+    "M": "#FF6969",
+    "L": "#8D0000",
+    "O": "#CCC"
+}
+COLOR_TYPES_PLAYED = {
+    "Underwriting": "#9400D3",
+    "PSA": "#006A33",
+    "StationID": "#8B4500",
+    "Promotion": "#AAAAAA",  # TODO: set Promotion color
+    "R": "#AAAAAA",          # TODO: set Recently Reviewed color
+    "N": "#2258D5",
+    "H": "#4D7CE6",
+    "M": "#6D92E6",
+    "L": "#005280",
+    "O": "#999"
+}
 
 class GridObj(Frame):
     Cart = None
@@ -29,56 +42,38 @@ class GridObj(Frame):
     Playing = False
     NextCoord = None
 
-    ## parent (ZA_Carts)
     def __init__(self, parent, nextcoord='0x0'):
         self.Parent = parent
         width = CART_WIDTH
         height = CART_HEIGHT
         self.NextCoord = nextcoord
 
-        ## BUG :: if you have larger than 9x9 this will break!
-        #Row = int(coord[0])
-        #Col = int(coord[2])
-
-## HUGE HACK TO MAKE THE LEFT MONITOR LOOK RIGHT AT WSBF
-        font = ('Helvetica', 12, 'bold')
-        if self.Parent.AllowRightClick:
-            font = ('Helvetica', 10, 'bold')
-            width -= 25
+        font = ('Helvetica', 10, 'bold')
 
         Frame.__init__(self, self.Parent.Master, bd=1, relief='sunken', bg='red', width=width, height=height)
         self.Rec = Canvas(self, width=width, height=height)
-
-        #self._Title = self.Rec.create_text(5, 5, width=width/2, anchor='nw', text="---")
-        #self._Issuer = self.Rec.create_text(width-5, 5, width=width/2, anchor='ne', text="---")
-
 
         self._Title = self.Rec.create_text(5, 5, width=width, anchor='nw', font=font, fill='white', text="---")
         self._Issuer = self.Rec.create_text(width/2, 25, width=width, anchor='n', font=font, fill='white', text="---")
 
         self._Length = self.Rec.create_text(width/2, height-15, anchor='s', font=font, fill='yellow', text="-:--")
 
-        ##self.Frame['bg'] = ColorReady
+        # self.Frame['bg'] = COLOR_READY
 
         self.Rec.bind('<ButtonPress-1>', self.LeftClick)
-        self.Rec.bind('<Button-2>', self.RightClick) #right click from an MBP trackpad
-        self.Rec.bind('<Button-3>', self.RightClick) #right click - normally?
+        self.Rec.bind('<Button-2>', self.RightClick)
+        self.Rec.bind('<Button-3>', self.RightClick)
         self.Rec.pack()
 
     def AddCart(self, cart):
         self.Cart = cart
-        #print "ADDING CART "+self.Cart.cartType
 
         foo = self.Cart.MeterFeeder()
         self.Rec.itemconfigure(self._Title, text=self.Cart.Title)
-        ## Below: Issuer used to be Type
         self.Rec.itemconfigure(self._Issuer, text=(self.Cart.Issuer + " " + self.Cart.ID))
         self.Rec.itemconfigure(self._Length, text=self.Parent.Meter.SecsFormat(foo[1]/1000))
 
-        try:
-            self.Rec['bg'] = ColorTypesNew[self.Cart.cartType]
-        except KeyError:
-            self.Rec['bg'] = '#F00'
+        self.Rec['bg'] = COLOR_TYPES_NEW[self.Cart.cartType]
 
     def RemCart(self):
         self.Cart = None
@@ -96,7 +91,7 @@ class GridObj(Frame):
     def Reset(self):
         self.Parent.Meter.Reset()
         try:
-            self.Rec['bg'] = ColorTypesPlayed[self.Cart.cartType]
+            self.Rec['bg'] = COLOR_TYPES_PLAYED[self.Cart.cartType]
         except KeyError:
             self.Rec['bg'] = '#00F'
 
@@ -106,15 +101,9 @@ class GridObj(Frame):
         self.Playing = False
 
     def OnComplete(self):
-        #print "GridObj :: TRIGGERED ONCOMPLETE"
-
         self.Reset()
-        try:
-            if self.Parent.Grid[self.NextCoord].HasCart():
-                self.Parent.Grid[self.NextCoord].LeftClick(None)
-        except KeyError:
-            #print "GridObj OnComplete KeyError"
-            pass
+        if self.NextCoord is not None and self.Parent.Grid[self.NextCoord].HasCart():
+            self.Parent.Grid[self.NextCoord].LeftClick(None)
 
     def LeftClick(self, clickEvent):
         ### click on a non-empty cart
@@ -136,7 +125,7 @@ class GridObj(Frame):
 
                 self.Parent.Meter.Start()
                 self.Cart.Start(self.Reset) ##self.OnComplete
-                self.Rec['bg'] = ColorNowPlaying
+                self.Rec['bg'] = COLOR_PLAYING
                 database.log_cart(self.Cart.ID)
             pass
         ### click on an empty cart; add the clipboarded cart
@@ -155,11 +144,8 @@ class GridObj(Frame):
             pass
 
     def RightClick(self, clickEvent):
-        if self.Parent.AllowRightClick:
-            if self.HasCart() and self.Playing is False:
-                self.RemCart()
-            else:
-                pass
+        if self.Parent.AllowRightClick and self.HasCart() and self.Playing is False:
+            self.RemCart()
             try:
                 self.Parent.Entry.focus_set()
             except AttributeError:

@@ -7,7 +7,7 @@ from ZAutomate_Gridder import Gridder
 from ZAutomate_GridObj import GridObj
 from ZAutomate_Meter import Meter
 
-METER_WIDTH = 1250
+METER_WIDTH = 1000
 GRID_ROWS = 8
 GRID_COLS = 6
 

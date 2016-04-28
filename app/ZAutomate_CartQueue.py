@@ -4,8 +4,6 @@ import time
 from ZAutomate_Meter import Meter
 import ZAutomate_DBInterface as database
 
-# TODO: review thread management
-
 CART_TYPES = [
     'StationID',
     'PSA',
