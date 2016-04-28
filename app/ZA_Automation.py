@@ -12,8 +12,13 @@ WINDOW_PARAMS = (str)(SIZE_X) + "x" + (str)(SIZE_Y) \
         + "+" + (str)(OFFSET_X) + "+" + (str)(OFFSET_Y)
 
 class Automation():
+    STATE_STOPPED = 1
+    STATE_PLAYING = 2
+    STATE_STOPPING = 3
+
     Master = None
     CartQueue = None
+    state = STATE_STOPPED
 
     def __init__(self, master, width):
         self.Master = master
@@ -73,47 +78,36 @@ class Automation():
 
     ###YATES_COMMENT: ButtonHandler for Start->Stopping->Stopped state machine
     def ButtonHandler(self):
-        content = self.ButtonContent.get()
-        if content == '  START    ':
+        if self.state is self.STATE_STOPPED:
             self.AutoStart()
             self.ButtonContent.set('    STOP    ')
             self.Button.config(bg='#FF0', highlightbackground='#FF0')
-        elif content == '    STOP    ':
+        elif self.state is self.STATE_PLAYING:
             self.AutoStop()
             self.ButtonContent.set(' STOPPING ')
             self.Button.config(bg='#F00', highlightbackground='#F00')
-        elif content == ' STOPPING ':
+        elif self.state is self.STATE_STOPPING:
             self.AutoStopNow()
             self.ButtonContent.set('  START    ')
             self.Button.config(bg='#008500', highlightbackground='#008500')
 
     ###YATES_COMMENT: Function to Start playing Automation...
-    def AutoStart(self, Quiet=True):
-        print "Automation :: AutoStart :: Entered Function"
+    def AutoStart(self):
+        print "Starting Automation..."
         self.CartQueue.Start(True)
-        if Quiet is False:
-            print 'Automation starting...'
+        self.state = self.STATE_PLAYING
 
     ###YATES_COMMENT: Button to Stop playing Automation after this song.
-    def AutoStop(self, Quiet=True):
-        print "Automation :: AutoStop :: Entered Function"
+    def AutoStop(self):
+        print "Stopping Automation after this track..."
         self.CartQueue.StopSoon()
-        if Quiet is False:
-            print 'Automation will stop after this track.'
+        self.state = self.STATE_STOPPING
 
     ###YATES_COMMENT: Button to stop playing Automation now.
-    def AutoStopNow(self, Quiet=True):
-        print "Automation :: AutoStopNow :: Entered Function"
-        ###YATES_COMMENT: Transition function handles transitioning between
-        ###                    starting, stopping and stopped.
-        ###                    If called and our queueu is below the minimum threshold
-        ###                    it refills the thread;
-        ###                    If KeepGoing is true (A cart just finished), dequeues the
-        ###                    Cart and plays the next cart.
-        ###                    If stopped, we clear out the queue, updated UI and
-        ###                    wait to get a new one
-        print "Automationp :: AutoStopNow :: Calling CartQueue.Transition"
+    def AutoStopNow(self):
+        print "Stopping Automation immediately."
         self.CartQueue.Transition()
+        self.state = self.STATE_STOPPED
 
     # callback: when anything happens in CartQueue, run this to update the UI's state
     def UIUpdate(self):

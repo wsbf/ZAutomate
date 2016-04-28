@@ -22,7 +22,7 @@ class Cart():
         try:
             tempFile = mad.MadFile(filename)
         except IOError:
-            print self.timeStamp() + " :=: Cart :: __init__ :: Error :: Mad.Madfile(" + (str)(filename) +") failed!"
+            print time.asctime() + " :=: Cart :: __init__ :: Error :: Mad.Madfile(" + (str)(filename) +") failed!"
         if tempFile is not None:
             self.Sound = Player(tempFile, filename)
         else:
@@ -50,7 +50,6 @@ class Cart():
 
     def __del__(self):
         ###self.Sound.destroy()
-        ##print self.timeStamp() + " :=: Destructor for title: ",
         ##print self.Title
         pass
 
@@ -58,15 +57,15 @@ class Cart():
         return (self.Sound.time_elapsed(), self.Sound.length(), self.Title, self.Issuer, self.ID, self.cartType)
 
     def Start(self, callback=None):
-        print self.timeStamp() + " :=: Cart :: Start :: " + self.Title + " :: " + self.Issuer
+        print time.asctime() + " :=: Cart :: Start :: " + self.Title + " :: " + self.Issuer
         try:
             self.Sound.play(callback)
         except:
-            print self.timeStamp() + " :=: Cart :: Start :: ERROR :: could not play the file " + self.Filename
+            print time.asctime() + " :=: Cart :: Start :: ERROR :: could not play the file " + self.Filename
             return
 
     def Stop(self):
-        print self.timeStamp() + " :=: Cart :: Stop :: " + self.Issuer + " - " + self.Title
+        print time.asctime() + " :=: Cart :: Stop :: " + self.Issuer + " - " + self.Title
         self.Sound.stop()
 
     def IsPlaying(self):
@@ -81,6 +80,3 @@ class Cart():
 
     def SeekToFront(self):
         self.Sound.SeekToFront()
-
-    def timeStamp(self):
-        return time.asctime(time.localtime(time.time()))

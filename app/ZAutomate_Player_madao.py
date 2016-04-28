@@ -36,14 +36,14 @@ class Player():
                 if buf is not None:
                     AODEV.play(buf, len(buf))
                 else:
-                    print self.timeStamp() + " :=: player_madao :: play_internal :: Buffer is empty"
+                    print time.asctime() + " :=: player_madao :: play_internal :: Buffer is empty"
                     break
         except:
-            print self.timeStamp() + " :=: Player_madao :: play_internal :: Something went terribly terribly wrong."
-            print self.timeStamp() + " :=: len(buf) = " + (str)(len(buf))
+            print time.asctime() + " :=: Player_madao :: play_internal :: Something went terribly terribly wrong."
+            print time.asctime() + " :=: len(buf) = " + (str)(len(buf))
 
         if self.Callback is not None and self.KeepGoing is True:
-            print self.timeStamp() + " :=: Player_Madao :: play_internal :: Executing callback"
+            print time.asctime() + " :=: Player_Madao :: play_internal :: Executing callback"
             self.SeekToFront()
             self.KeepGoing = False
             self.Callback()
@@ -55,19 +55,19 @@ class Player():
         self.Callback = callback
 
         if self.isplaying():
-            print self.timeStamp() + " :=: Player_madao :: play :: Tried to start, but already playing"
+            print time.asctime() + " :=: Player_madao :: play :: Tried to start, but already playing"
             return
 
         self.KeepGoing = True
         try:
-            print self.timeStamp() + " :=: Player_madao :: play :: starting new play thread"
+            print time.asctime() + " :=: Player_madao :: play :: starting new play thread"
             self.Thread = thread.start_new_thread(self.play_internal, ( ) )
         except:
-            print self.timeStamp() + " :=: Player_madao :: play :: Could not start new play thread"
+            print time.asctime() + " :=: Player_madao :: play :: Could not start new play thread"
 
     def stop(self):
         if not self.isplaying():
-            print self.timeStamp() + " :=: Player :: stop :: Tried to stop, but not playing"
+            print time.asctime() + " :=: Player :: stop :: Tried to stop, but not playing"
             return
         self.KeepGoing = False
         self.Callback = None
@@ -78,10 +78,7 @@ class Player():
             self.Madrsc = mad.MadFile(self.FileName)
             self.Length = self.Madrsc.total_time()
         except IOError:
-            print self.timeStamp() + " :=: Player_Madao :: SeekToFront :: IOError encountered!"
-            print self.timeStamp() + " :=: Player_Madao :: SeekToFront :: Couldn't open file " + \
+            print time.asctime() + " :=: Player_Madao :: SeekToFront :: IOError encountered!"
+            print time.asctime() + " :=: Player_Madao :: SeekToFront :: Couldn't open file " + \
                   (str)(self.FileName) + "\nIn the immortal words of Zach," +\
                   "I hope you're debugging, Yates"
-
-    def timeStamp(self):
-        return time.asctime(time.localtime(time.time()))

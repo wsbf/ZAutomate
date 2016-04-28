@@ -19,9 +19,6 @@ FILE_AUTOCONF = "sid.conf"
 ### enable logging
 LOGGING = True
 
-def timeStamp():
-    return time.asctime(time.localtime(time.time()))
-
 def get_new_show_id(showID):
     """Get a new show ID for queueing playlists.
 
@@ -92,7 +89,7 @@ def get_cart(cartType):
             else:
                 count += 1
     except requests.exceptions.SSLError:
-        print timeStamp() + " :=: Error: Could not fetch cart."
+        print time.asctime() + " :=: Error: Could not fetch cart."
 
     return None
 
@@ -131,7 +128,7 @@ def get_next_playlist(showID):
             if track.Verify():
                 show["playlist"].append(track)
             else:
-                print timeStamp() + " :=: DBInterface :: Get_Next_Playlist() :: cart file \"" + filename + "\" does not exist"
+                print time.asctime() + " :=: DBInterface :: Get_Next_Playlist() :: cart file \"" + filename + "\" does not exist"
     except requests.exceptions.SSLError:
         print "Error: Could not fetch playlist."
 
@@ -162,7 +159,7 @@ def get_carts():
                     carts[t].append(cart)
 
     except requests.exceptions.SSLError:
-        print timeStamp() + " :=: Error: Could not fetch carts."
+        print time.asctime() + " :=: Error: Could not fetch carts."
 
     return carts
 
@@ -209,4 +206,4 @@ def log_cart(cartID):
         res = requests.post(URL_LOG, params={"cartid": cartID})
         print res.text
     except requests.exceptions.SSLError:
-        print timeStamp() + " :=: Caught error: Could not access cart logger."
+        print time.asctime() + " :=: Caught error: Could not access cart logger."

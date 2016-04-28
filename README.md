@@ -25,7 +25,7 @@ pylint **/*.py > lint.out
 - separate Logbook_Log into log_cart and log_track
 - create separate classes for carts and tracks
 - resolve lint errors
-- clean up print statements
+- clean up print statements, use `logging` module
 - Automation stops playing PSAs after a long time?
 - Cart Machine buttons must be pressed 2-3 times to play
 - Large queries in DJ Studio interrupt audio streaming (use multiprocess)

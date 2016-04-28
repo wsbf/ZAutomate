@@ -97,15 +97,14 @@ class CartQueue():
 
     def Dequeue(self):
         if len(self.Arr) > 0:
+            print time.asctime() + " :=: CQ :: Dequeue :: Dequeuing " + self.Arr[0].PrintCart()
+
             # stop the cart
-            print self.timeStamp() + " :=: CQ :: Dequeue :: Stopping track " + self.Arr[0].PrintCart()
             self.Arr[0].Stop()
+            self.Meter.Reset()
 
             # move the cart to the played list
-            print self.timeStamp() + " :=: CQ :: Dequeue :: Dequeuing " + self.Arr[0].PrintCart()
             self.PlayedArr.append(self.Arr.pop(0))
-
-            self.Meter.Reset()
 
     def Save(self):
         database.save_show_id(self.ShowID)
@@ -131,7 +130,7 @@ class CartQueue():
             # add each track whose artist isn't already in the queue or playlist list
             self.Arr.extend([t for t in show["playlist"] if not self.IsArtistInList(t, self.PlayedArr) and not self.IsArtistInList(t, self.Arr)])
 
-            print self.timeStamp() + " :=: CartQueue :: Enqueued tracks, length is " + (str)(len(self.Arr))
+            print time.asctime() + " :=: CartQueue :: Enqueued tracks, length is " + (str)(len(self.Arr))
 
         self.GenStartTimes(beginIndex)
 
@@ -156,7 +155,7 @@ class CartQueue():
 
         # refill the queue if it is too short
         if len(self.Arr) < PLAYLIST_MIN_LENGTH:
-            print self.timeStamp() + " :=: CQ :: Transition :: Refilling the playlist"
+            print time.asctime() + " :=: CQ :: Transition :: Refilling the playlist"
             # thread.start_new_thread(self.Refill, ())
             self.Refill()
 
@@ -164,18 +163,17 @@ class CartQueue():
         carts = [c for c in self.Arr if c.cartType in CART_TYPES]
 
         if len(carts) is 0:
-            print self.timeStamp() + " :=: CQ :: Transition :: Refilling carts"
+            print time.asctime() + " :=: CQ :: Transition :: Refilling carts"
             # thread.start_new_thread(self.InsertCarts, ())
             self.InsertCarts()
 
-        # start the next track if the current track ended
         if self.KeepGoing is True:
-            print self.timeStamp() + " :=: CQ :: Transition :: Starting the next track"
+            # start the next track if the current track ended
+            print time.asctime() + " :=: CQ :: Transition :: Starting the next track"
             self.Start()
-
-        # remove all carts if the queue was stopped
         else:
-            print self.timeStamp() + " :=: CQ :: Transition :: Removing all carts"
+            # remove all carts if the queue was stopped
+            print time.asctime() + " :=: CQ :: Transition :: Removing all carts"
             self.RemoveCarts()
             self.UIUpdate()
 
@@ -219,15 +217,13 @@ class CartQueue():
 
     ## Refresh the queue with new carts.
     ## This function is called when the queue is started and when the queue
-    ## runs out of carts. It must always be called from a thread other than
-    ## the main thread.
+    ## runs out of carts.
     def InsertCarts(self):
         # self.QueueLock.acquire()
 
         self.RemoveCarts()
         for entry in AUTOMATION_CARTS:
             self.InsertCart(entry["types"], entry["minuteBreak"], entry["maxOffset"])
-        self.UIUpdate()
 
         # self.QueueLock.release()
         # thread.exit()
@@ -242,7 +238,7 @@ class CartQueue():
         if target + datetime.timedelta(seconds=maxOffset) < datetime.datetime.now():
             return
 
-        print self.timeStamp() + " :=: CQ :: InsertCart :: Target insert time is " + (str)(target)
+        print time.asctime() + " :=: CQ :: InsertCart :: Target insert time is " + (str)(target)
 
         ## find the position in queue with the closest start time to target
         min_index = -1
@@ -262,11 +258,13 @@ class CartQueue():
             elif delta > min_delta:
                 break
 
-        print self.timeStamp() + " :=: CQ :: InsertCart :: min_index is " + (str)(min_index)
-        print self.timeStamp() + " :=: CQ :: InsertCart :: min_delta is " + (str)(min_delta)
+        print time.asctime() + " :=: CQ :: InsertCart :: min_index is " + (str)(min_index)
+        print time.asctime() + " :=: CQ :: InsertCart :: min_delta is " + (str)(min_delta)
 
-        if min_delta.seconds > maxOffset:
-            print self.timeStamp() + " :=: CQ :: InsertCart :: Could not insert carts within target window"
+        if min_delta.seconds <= maxOffset:
+            print time.asctime() + " :=: CQ :: InsertCart :: Carts were inserted within target window"
+        else:
+            print time.asctime() + " :=: CQ :: InsertCart :: Could not insert carts within target window"
 
         ## insert a cart of each type into the queue
         index = min_index
@@ -276,38 +274,24 @@ class CartQueue():
             index += 1
         self.GenStartTimes(min_index)
 
-
-    ###YATES_COMMENT: Function to start playing the first cart.     Maybe called
-    ###                    by a module to start songs, or as a... callback? when the
-    ###                    automation button in state "Stopped" is clicked.
+    ### Start the front track in the queue.
+    ### This function is called when Automation is started and after a track ends.
     def Start(self, click=False):
-        print self.timeStamp() + " :=: CQ :: Start :: Entered Function"
         self.KeepGoing = True
 
         if click is True:
-            print self.timeStamp() + " :=: CQ :: Start :: Calling GenStartTimes()"
             self.GenStartTimes(0)
-
-        try:
-            self.Meter.Start()
-            self.Arr[0].Start(self.Transition)
-            database.log_cart(self.Arr[0].ID)
-
-            print self.timeStamp() + " :=: \t" + self.Arr[0].Title + " by " + self.Arr[0].Issuer
-        except IndexError:
-            print self.timeStamp() + " :=: CQ :: Start :: ERROR :: Queue is empty!!!"
-            return
-
-        ###If called by button click, InsertCarts under a new thread.
-        if click is True:
-            print self.timeStamp() + " :=: CQ :: Start :: Starting new InsertCarts() Thread"
             # thread.start_new_thread(self.InsertCarts, ())
             self.InsertCarts()
+
+        print time.asctime() + " :=: starting " + self.Arr[0].PrintCart()
+        self.Meter.Start()
+        self.Arr[0].Start(self.Transition)
+        database.log_cart(self.Arr[0].ID)
 
         self.UIUpdate()
 
     def StopSoon(self):
-        print self.timeStamp() + " :=: CQ :: StopSoon :: Slow stop registered"
         self.KeepGoing = False
 
     ## passed to Meter on instantiation
@@ -316,6 +300,3 @@ class CartQueue():
             return self.Arr[0].MeterFeeder()
         else:
             return ("-:--", "-:--", "", "", "", "")
-
-    def timeStamp(self):
-        return time.asctime(time.localtime(time.time()))
