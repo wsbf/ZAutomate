@@ -12,16 +12,36 @@ CART_TYPES = [
     'Underwriting'
 ]
 
-### Specifies what type of cart configurations should be inserted into the play list.
-### Tuple(cartType, minuteBreak, maxOffset).
-### First entry is the combination of what we should do (StationID + PSA, etc).
-### Second Entry determines when it should happen.
-### Third entry states how much it can be offset from the time specified by second entry.
+### Configuration for when to play carts. The current configuration
+### fulfills the current rules established by the FCC and WSBF:
+### - 1 StationID at the top of every hour, +/- 5 minutes
+### - 2 PSAs each hour
+### - 1 Underwriting each hour
+###
+### types        array of cart types to play
+### minuteBreak  target play time within each hour
+### maxOffset    maximum deviation from minuteBreak, in seconds
 AUTOMATION_CARTS = [
-    (['StationID'], 1, 300),
-    (['StationID', 'PSA'], 15, 300),
-    (['StationID', 'Underwriting'], 30, 300),
-	(['StationID', 'PSA'], 45, 300)
+    {
+        "types": ["StationID"],
+        "minuteBreak": 1,  # TODO: should this be 0?
+        "maxOffset": 300
+    },
+    {
+        "types": ["StationID", "PSA"],
+        "minuteBreak": 15,
+        "maxOffset": 300
+    },
+    {
+        "types": ["StationID", "Underwriting"],
+        "minuteBreak": 30,
+        "maxOffset": 300
+    },
+    {
+        "types": ["StationID", "PSA"],
+        "minuteBreak": 45,
+        "maxOffset": 300
+    }
 ]
 
 PLAYLIST_MIN_LENGTH = 10
@@ -206,151 +226,56 @@ class CartQueue():
 
         self.RemoveCarts()
         for entry in AUTOMATION_CARTS:
-            self.InsertCart(entry[0], entry[1], entry[2])
+            self.InsertCart(entry["types"], entry["minuteBreak"], entry["maxOffset"])
         self.UIUpdate()
 
         # self.QueueLock.release()
         # thread.exit()
 
-    ## Make sure we meet the FCC station id rule (and our own rules!)
-    ## This function works on a one-hour interval
-    ## For multi-hour repetition (i.e. underwriting every 2 hours) -
-    ## Have the php insertion script figure out which messages need to be played at, say, the 30:00 mark
+    ## Insert carts into the current hour according to a config entry.
+    ## This function inserts carts as close as possible to the target start time,
+    ## even if the target window is not met.
+    def InsertCart(self, types, minuteBreak, maxOffset):
+        target = datetime.datetime.now().replace(minute=minuteBreak, second=0, microsecond=0)
 
-    ## minuteBreak :: ex 30 for playing at/around 30:00 (minutes)
-    ## maxOffset :: window announcement must fall in (seconds)
-
-    ## THREADING :: This should be thread-safe, because we don't do anything with self.Arr[0]
-    def InsertCart(self, cartTypes, minuteBreak, maxOffset, firstRun=True):
-        print self.timeStamp() + " :=: CQ :: InsertCart :: Entered Function"
-
-        ###YATES_COMMENT: This returns today:thisHour:00:00:00
-        relevantInsertTime = datetime.datetime.now().replace(minute=0, second=0, microsecond=0)
-        ###YATES_COMMENT: This adds the minutebreak (when we want to insert) to
-        ###                    the relevantInsertTime.
-        ###                    relevantInserTime = today:thisHouse:minuteBreak:00:00
-        relevantInsertTime += datetime.timedelta(minutes=minuteBreak) #hours=1
-        print self.timeStamp() + " :=: CQ :: InsertCart :: Optimal Insert Time is " + (str)(relevantInsertTime)
-
-        ###YATES_COMMENT: This feels really funky.  It's entirely possible that we
-        ###                    generate a relevantInsertTime and it's before now.
-        ###                    For instance, it's 10:33, and we're working on the half-hour
-        ###                    PSA-Station ID.  Cut the minutes.  10:00, add the minuteBreak
-        ###                    and we get 10:30.  10:30 < 10:33.
-        ###
-        ###                    The confusing part is why we bump ahead an hour.  So from
-        ###                    the above example, we're now at 11:30.  What happened between
-        ###                    10:33 and 11:29.
-        ###
-        ###                    Iz think there's an assumption here that if we're already
-        ###                    past the time, don't worry about this PSA until the next
-        ###                    hour.
-        ## Allows inserting carts after an hour change (start at :58. otherwise, would only do 60)
-        timeThresholdVar = relevantInsertTime + datetime.timedelta(seconds=maxOffset)
-        if timeThresholdVar < datetime.datetime.now():
-            print self.timeStamp() + " :=: optimal insert time has already passed, scheduling for next hour"
-            print self.timeStamp() + " =:= threshold = " + (str)(timeThresholdVar) + " < " + (str)(datetime.datetime.now())
-            print self.timeStamp() + " :=: tzinfo: now(): " + (str)(datetime.datetime.now().tzinfo) + " and then " + (str)(timeThresholdVar.tzinfo)
+        ## don't insert if the window has already passed this hour
+        if target + datetime.timedelta(seconds=maxOffset) < datetime.datetime.now():
             return
 
-        insertionCounter = -1        ## array index at which to finally insert before
-        bestDiffSoFar = -1    ## minimal time difference between the optimal and possible insertion points
+        print self.timeStamp() + " :=: CQ :: InsertCart :: Target insert time is " + (str)(target)
 
-        ## PATCH to make thread-safe: start with cart 1 - never touch 0!
-        ###YATES_COMMENT: This loop finds the the cart (Song or cart) which has the
-        ###                    closest start time to the start time of the cart (cart)
-        ###                    which we would like to insert.
-        for ctr in range(1, len(self.Arr)):
-            cartStart = self.Arr[ctr].GetStartTime()
-            if cartStart is None:
-                print self.timeStamp() + " :=: CQ :: InsertCart :: Null Pointer Error :: InsertCart failed!"
-                return
-            relevantStartTime = datetime.datetime.fromtimestamp(time.mktime(cartStart))
+        ## find the position in queue with the closest start time to target
+        min_index = -1
+        min_delta = -1
 
-            ###YATES_COMMENT: This line gives us the difference between where we want
-            ###                    to insert the next cart and the starting time of the cart
-            ###                    we're looking at.
-            ###                    If relevantInsertTime > relevantStartTime, difference > 0
-            ###                    So a value of 0...maxOffset would be acceptable, and we
-            ###                    will insert it before the song we're currently looking at (Arr[ctr])
+        ## TODO: the head of the queue is ignored for multi-threading safety
+        ##       however, it might be more prudent to use a lock
+        for i in range(1, len(self.Arr)):
+            startTime = self.Arr[i].GetStartTime()
+            startTime = datetime.datetime.fromtimestamp(time.mktime(startTime))
 
-            ## this allows for the (documented) overflow behavior of timedelta when it is negative
-            difference = relevantInsertTime - relevantStartTime
-            ###YATES_COMMENT: If the difference in days is negative, that implies that
-            ###                    relevantStartTime > relevantInsertTime, and the song comes after
-            ###                    the relevantStartTime, but still possibly within the relevantStartTime +/- maxOffset
-            ###
-            ###                    If we do
-            ###    datetime.timedelta(days=1) - ((relevantStartTime - relevantInsertTime) + datetime.timedelta(days=1))
-            ###                    We'll get the positive number of minutes after the playtime that we want.
-            ###                    If it's less than 5, this will work for appending instead of prepending.
+            delta = abs(target - startTime)
 
-            if difference.days is -1:
-                difference = relevantStartTime - relevantInsertTime
-
-
-            if difference.seconds < bestDiffSoFar or bestDiffSoFar is -1:
-                insertionCounter = ctr
-                bestDiffSoFar = difference.seconds
-                ###YATES_COMMENT: This is a silly if statement.  It wont ever execute.
-                ###                    It's a possibility that difference.seconds >= bestDiffSoFar,
-                ###                    But initializing bestDiffSoFar = difference.seconds
-
-                ###YATES_COMMENT: The intent of this if statement is to break out of
-                ###                    the loop if we've gone past the "sweet" spot in the
-                ###                    playlist.
-
-                ###YATES_COMMENT: Example time:
-                ###                    relevantInsertTime is :30:00.
-                ###                    cart[1] :28:00 till :31:00
-                ###                    difference is :02:00, < bestDiffSoFar
-                ###                    bestDiffSoFar = :02:00
-                ###
-                ###                    cart[2] :31:00 till :33:00
-                ###                    difference is :05:00 !< bestDiffSoFar
-                ###
-                ###                    So if we keep looking at songs, our difference
-                ###                    will continue to get larger and larger.  No point
-                ###                    in continuing to look further.
-                ###                    I think this needs to be unindented by one tab
-                ###                    so that it's not a possible effect of comparing
-                ###                    the times.  Currently 99% sure it's dead code.
-            if difference.seconds > bestDiffSoFar:
+            if min_delta is -1 or delta < min_delta:
+                min_index = i
+                min_delta = delta
+            elif delta > min_delta:
                 break
-        ###YATES_COMMENT: By checking the times this way, we're forcing ourselves
-        ###                    to only allow adding of carts before
-        print self.timeStamp() + " :=: CQ :: InsertCart :: Done searching through tracks"
-        print self.timeStamp() + " :=: CQ :: InsertCart :: insertionCounter is " + (str)(insertionCounter)
-        print self.timeStamp() + " :=: CQ :: InsertCart :: Current best track is: " + self.Arr[insertionCounter].PrintCart()
 
-        offset = 0
-#        print self.timeStamp() + " :=: CQ :: InsertCart :: Current best insert time is " + (str)(self.Arr[insertionCounter].getTimeStruct())
-        if bestDiffSoFar <= maxOffset:
-            ## this lets us remove the inserted carts upon stopping playback
-            ## they will be readded (and start slots recalculated) on next start
-            ## get Carts to insert
+        print self.timeStamp() + " :=: CQ :: InsertCart :: min_index is " + (str)(min_index)
+        print self.timeStamp() + " :=: CQ :: InsertCart :: min_delta is " + (str)(min_delta)
 
-            for cType in cartTypes:
-                cart = database.get_cart(cType)
-                print self.timeStamp() + " :=: CQ :: InsertCart :: Inserting cart " + cart.Issuer + " - " + cart.Title + " at index " + (str)(insertionCounter+offset) + " with start time " + self.Arr[insertionCounter].GetFmtStartTime()
-                # + " with start time: " + self.Arr[insertionCounter+offset].getTimeStruct()
-                self.Arr.insert(insertionCounter+offset, cart)
-                offset += 1
-            self.GenStartTimes(insertionCounter)
-            print self.timeStamp() + " :=: CQ :: InsertCart :: Exiting Function"
-        else:
-            print self.timeStamp() + " :=: CQ :: InsertCart :: Could not find a spot to insert carts"
-            print self.timeStamp() + " :=: CQ :: InsertCart :: bestDiffSoFar = " + (str)(bestDiffSoFar)
-            print self.timeStamp() + " :=: CQ :: InsertCart :: best cart star time = : " + self.Arr[ctr].GetFmtStartTime()
-            for cType in cartTypes:
-                cart = database.get_cart(cType)
-                print self.timeStamp() + " :=: CQ :: InsertCart :: Inserting cart " + cart.Issuer + " - " + cart.Title + " at index " + (str)(insertionCounter+offset) + " with start time " + self.Arr[insertionCounter].GetFmtStartTime()
-                # + " with start time: " + self.Arr[insertionCounter+offset].getTimeStruct()
-                self.Arr.insert(insertionCounter+offset, cart)
-                offset += 1
-            self.GenStartTimes(insertionCounter)
+        if min_delta.seconds > maxOffset:
+            print self.timeStamp() + " :=: CQ :: InsertCart :: Could not insert carts within target window"
 
-            self.Arr[ctr].PrintCart()
+        ## insert a cart of each type into the queue
+        index = min_index
+        for t in types:
+            cart = database.get_cart(t)
+            self.Arr.insert(index, cart)
+            index += 1
+        self.GenStartTimes(min_index)
+
 
     ###YATES_COMMENT: Function to start playing the first cart.     Maybe called
     ###                    by a module to start songs, or as a... callback? when the
