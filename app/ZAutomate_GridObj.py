@@ -33,6 +33,8 @@ COLOR_TYPES_PLAYED = {
     "O": "#999"
 }
 
+FONT = ('Helvetica', 10, 'bold')
+
 class GridObj(Frame):
     Cart = None
     Rec = None
@@ -43,20 +45,15 @@ class GridObj(Frame):
     NextCoord = None
 
     def __init__(self, parent, nextcoord='0x0'):
+        Frame.__init__(self, parent.Master, bd=1, relief='sunken', bg='red', width=CART_WIDTH, height=CART_HEIGHT)
         self.Parent = parent
-        width = CART_WIDTH
-        height = CART_HEIGHT
         self.NextCoord = nextcoord
 
-        font = ('Helvetica', 10, 'bold')
+        self.Rec = Canvas(self, width=CART_WIDTH, height=CART_HEIGHT)
 
-        Frame.__init__(self, self.Parent.Master, bd=1, relief='sunken', bg='red', width=width, height=height)
-        self.Rec = Canvas(self, width=width, height=height)
-
-        self._Title = self.Rec.create_text(5, 5, width=width, anchor='nw', font=font, fill='white', text="---")
-        self._Issuer = self.Rec.create_text(width/2, 25, width=width, anchor='n', font=font, fill='white', text="---")
-
-        self._Length = self.Rec.create_text(width/2, height-15, anchor='s', font=font, fill='yellow', text="-:--")
+        self._Title = self.Rec.create_text(5, 5, width=CART_WIDTH, anchor='nw', font=FONT, fill='white', text="---")
+        self._Issuer = self.Rec.create_text(CART_WIDTH / 2, 25, width=CART_WIDTH, anchor='n', font=FONT, fill='white', text="---")
+        self._Length = self.Rec.create_text(CART_WIDTH / 2, CART_HEIGHT - 15, anchor='s', font=FONT, fill='yellow', text="-:--")
 
         # self.Frame['bg'] = COLOR_READY
 
@@ -83,10 +80,7 @@ class GridObj(Frame):
         self.Rec['bg'] = '#FFF'
 
     def HasCart(self):
-        if self.Cart is None:
-            return False
-        else:
-            return True
+        return self.Cart is not None
 
     def Reset(self):
         self.Parent.Meter.Reset()
@@ -96,7 +90,7 @@ class GridObj(Frame):
             self.Rec['bg'] = '#00F'
 
         self.Parent.SetActiveCart(None)
-        self.Parent.SetActiveGrid(None)
+        self.Parent.SetActiveGridObj(None)
 
         self.Playing = False
 
@@ -121,7 +115,7 @@ class GridObj(Frame):
                 self.Playing = True
 
                 self.Parent.SetActiveCart(self.Cart)
-                self.Parent.SetActiveGrid(self)
+                self.Parent.SetActiveGridObj(self)
 
                 self.Parent.Meter.Start()
                 self.Cart.Start(self.Reset) ##self.OnComplete
@@ -137,7 +131,7 @@ class GridObj(Frame):
                 ## i.e. on any click empty slot in the cart machine
                 pass
 
-        ## this is a usability kludge - give focus back to the search bar
+        # TODO: move to DJ Studio
         try:
             self.Parent.Entry.focus_set()
         except AttributeError:
@@ -146,6 +140,8 @@ class GridObj(Frame):
     def RightClick(self, clickEvent):
         if self.Parent.AllowRightClick and self.HasCart() and self.Playing is False:
             self.RemCart()
+
+            # TODO: move to DJ Studio
             try:
                 self.Parent.Entry.focus_set()
             except AttributeError:

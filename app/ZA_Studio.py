@@ -2,7 +2,7 @@
 
 import thread
 import Tkinter
-from Tkinter import Tk, Frame, Label, BooleanVar, NW, Radiobutton, Entry, Button, S
+from Tkinter import Tk, Frame, Label, BooleanVar, Radiobutton, Entry, Button
 from ZAutomate_GridObj import GridObj
 from ZAutomate_Meter import Meter
 import ZAutomate_DBInterface as database
@@ -58,26 +58,26 @@ class Studio(Frame):
         self.AutoCartBool = BooleanVar()
         self.AutoCartBool.set(True)
         control = Frame(self.Master, bd=2, relief=Tkinter.SUNKEN)
-        Label(control, font=('Helvetica', 14, 'bold'), fg='#000', text='Auto-Slot Rotation').pack(anchor=NW)
-        Radiobutton(control, text='Enabled', variable=self.AutoCartBool, value=True).pack(anchor=NW)
-        Radiobutton(control, text='Disabled', variable=self.AutoCartBool, value=False).pack(anchor=NW)
+        Label(control, font=('Helvetica', 14, 'bold'), fg='#000', text='Auto-Slot Rotation').pack(anchor=Tkinter.NW)
+        Radiobutton(control, text='Enabled', variable=self.AutoCartBool, value=True).pack(anchor=Tkinter.NW)
+        Radiobutton(control, text='Disabled', variable=self.AutoCartBool, value=False).pack(anchor=Tkinter.NW)
         control.grid(row=self.Rows+2, column=4, columnspan=self.Cols-4)
 
-        Label(control, font=('Helvetica', 14, 'bold'), fg='#000', text='Search Box').pack(anchor=NW)
+        Label(control, font=('Helvetica', 14, 'bold'), fg='#000', text='Search Box').pack(anchor=Tkinter.NW)
         self.Entry = Entry(control, takefocus=True, width=45, bg='#000', fg='#33CCCC')
         self.Entry.bind('<Return>', self.Search)
         ##self.Entry.grid(row=self.Rows+3,column=0,columnspan=5)
-        self.Entry.pack(anchor=NW)
+        self.Entry.pack(anchor=Tkinter.NW)
         self.Entry.focus_set()
 
         button = Button(control, text='Search', command=self.Search)
         ##button.grid(row=self.Rows+3,column=5)
-        button.pack(anchor=S)
+        button.pack(anchor=Tkinter.S)
 
         self.GenerateGrid()
 
-    def SetActiveGrid(self, grid):
-        self.ActiveGrid = grid
+    def SetActiveGridObj(self, grid_obj):
+        self.ActiveGrid = grid_obj
 
     def IsCartActive(self):
         return self.ActiveCart is not None

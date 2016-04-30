@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 import random
-from Tkinter import Frame, Label, N, Button
+import Tkinter
+from Tkinter import Frame, Label, Button
 import ZAutomate_DBInterface as database
 from ZAutomate_Gridder import Gridder
 from ZAutomate_GridObj import GridObj
@@ -11,19 +12,20 @@ METER_WIDTH = 1000
 GRID_ROWS = 8
 GRID_COLS = 6
 
-###    TO DO
-###        hourly reload - add to tkinter event loop? (call Carts.Reload)
-###
-### KNOWN BUGS
-###        the end of the meter bar is misaligned (fixed with a kludge)
-###        dual playback bug (esp. with madao) is fixed in GridObj.LeftClick
-###        one cart stop, then restart: meter is not reset correctly
-###        underwriting restricted to rightmost column
+FONT_TITLE = ('Helvetica', 36, 'bold italic')
+FONT_RELOAD = ('Helvetica', 24, 'bold')
+
+COLOR_TITLE_BG = "#DDDDDD"
+COLOR_TITLE_FG = "#000000"
+COLOR_RELOAD_BG = "#FF0000"
+COLOR_RELOAD_FG = "#000000"
+
+TEXT_TITLE = "ZAutomate :: Cart Machine"
+TEXT_RELOAD = "Reload"
+
 class CartMachine(Frame):
     ###Master Window Variable
     Master = None
-    ###Title at top, contains Application title and Reload Button
-    Title = None
     ###Meter for counting down time left
     Meter = None
 
@@ -43,15 +45,10 @@ class CartMachine(Frame):
 
     def __init__(self): #width, height,
         Frame.__init__(self)
-        self.Grid = {}
-
-        self.Rows = GRID_ROWS
         self.Cols = GRID_COLS
+        self.Rows = GRID_ROWS
 
-        self.Gridder = Gridder(self.Rows, self.Cols)
-
-        ###YATES_COMMENT: Great comment, Zach.
-        ## make the whole shebang resizable
+        # make the window resizable
         top = self.winfo_toplevel()
         for row in range(2, self.Rows+2):
             for col in range(0, self.Cols):
@@ -60,43 +57,38 @@ class CartMachine(Frame):
                 self.rowconfigure(row, weight=1)
                 self.columnconfigure(col, weight=1)
 
-        ###Instantiate new Title Label.
-        self.Title = Label(self.Master, fg='#000', \
-                font=('Helvetica', 36, 'bold italic'), \
-                text='ZAutomate :: Cart Machine')
+        # initialize the title
+        title = Label(self.Master, \
+            bg=COLOR_TITLE_BG, fg=COLOR_TITLE_FG, \
+            font=FONT_TITLE, text=TEXT_TITLE)
+        title.grid(row=0, column=0, columnspan=self.Cols - 1, sticky=Tkinter.N)
 
-        ###YATES_COMMENT: Puts the title in the grid[0][0].
-        ###               Makes the Title span across
-        ###               Not sure what sticky=n does.
-        self.Title.grid(row=0, column=0, columnspan=self.Cols-1, sticky=N)
+        # initialize the reload button
+        reload_button = Button(self.Master, \
+            bg=COLOR_RELOAD_BG, fg=COLOR_RELOAD_FG, \
+            font=FONT_RELOAD, text=TEXT_RELOAD, \
+            command=self.reload)
+        reload_button.grid(row=0, column=self.Cols - 1)
 
-        ###YATES_COMMENT: Reload Button.  Command calls Carts::Reload()
-        self.B_Reload = Button(self.Master, text='Reload', bg='red', \
-                        font=('Helvetica', 24, 'bold'), command=self.Reload)
-        ###YATES_COMMENT: Places the reload button in grid[0][Cols-1], or rather
-        ###               grid[0][5]
-        self.B_Reload.grid(row=0, column=self.Cols-1)
-
-        ###YATES_COMMENT: Instantiate the meter class for the cartMachine.
-        ###               Param1 binds to Master window.
-        ###               Param2 determines how long the meter will be.
-        ###               NOTA BENE: By using the METER_WIDTH variable defined
-        ###                 in ZAutomate_config.py, if we resize the Window, it
-        ###                 will not accurately tick through the meter.
-        ###               Param3 is the callback to function to get the percent
-        ###               completion of a track for redrawing the meter
-        ###               Param4 is the callback for when the meter hits the end
+        # initialize the meter
         self.Meter = Meter(self.Master, METER_WIDTH, self.MeterFeeder, \
                      self.EndCallback)
-        ###YATES_COMMENT: Stick the meter in grid[1][0], row 1, column 0, make
-        ###               it span across all the columns
         self.Meter.grid(row=1, column=0, columnspan=self.Cols) #, sticky=E+W
         ##self.Meter.grid_propagate(0)
 
-        ###YATES_COMMENT: Call reload to fill the cart machine.
-        self.Reload(firstRun=True)
+        # initialize the grid
+        self.Grid = {}
+        for row in range(1, self.Rows + 1):
+            for col in range(1, self.Cols + 1):
+                key = (str)(row) + "x" + (str)(col)
+                self.Grid[key] = GridObj(self)
+                self.Grid[key].grid(row=row + 1, column=col - 1)
 
-    def FillTheGrid(self):
+        self.Gridder = Gridder(self.Rows, self.Cols)
+
+        self.load()
+
+    def load(self):
         """Load the grid with carts.
 
         Since there are four cart types, each type is assigned
@@ -195,57 +187,24 @@ class CartMachine(Frame):
 
             toinsert += 2
 
-    def BlankTheGrid(self):
-        ###YATES_COMMENT: BlankTheGrid function removes all existing carts from
-        ###               the Grid.
-        for row in range(1, self.Rows+1):
-            for col in range(1, self.Cols+1):
-                key = (str)(row)+"x"+(str)(col)
-                try:
-                    self.Grid[key].grid_forget()
-                    self.Grid[key].destroy()
-                    del self.Grid[key]
-                except KeyError:
-                    print "Carts :: BlankTheGrid :: KeyError exception thrown"\
-                          + " for key " + (str)(key)
-        self.initializeGrid()
-
-    def initializeGrid(self):
-        for row in range(1, self.Rows+1):
-            for col in range(1, self.Cols+1):
-                key = (str)(row) + "x" + (str)(col)
-                self.Grid[key] = GridObj(self)
-                self.Grid[key].grid(row=row + 1, column=col - 1)
-
-    def Reload(self, firstRun=False):
+    def reload(self):
         if self.ActiveCart is not None:
             return
 
-        if firstRun is False:
-            self.BlankTheGrid()
-        else:
-            self.initializeGrid()
-        self.FillTheGrid()
+        self.load()
 
     def EndCallback(self):
         self.ActiveCart.Stop()
         self.ActiveGrid.Reset()
 
-    def SetActiveGrid(self, grid):
-        self.ActiveGrid = grid
+    def SetActiveGridObj(self, grid_obj):
+        self.ActiveGrid = grid_obj
 
     def SetActiveCart(self, cart):
-        if cart is None:
-            del cart
-            self.ActiveCart = None
-        else:
-            self.ActiveCart = cart
+        self.ActiveCart = cart
 
     def IsCartActive(self):
-        if self.ActiveCart is None:
-            return False
-        else:
-            return True
+        return self.ActiveCart is not None
 
     def MeterFeeder(self):
         if self.ActiveCart is not None:
@@ -256,7 +215,7 @@ class CartMachine(Frame):
     def Bail(self):
         self.master.destroy()
 
-cartMachine = CartMachine()
-cartMachine.master.protocol("WM_DELETE_WINDOW", cartMachine.Bail)
-cartMachine.master.title("ZAutomate :: Cart Machine")
-cartMachine.mainloop()
+cart_machine = CartMachine()
+cart_machine.master.protocol("WM_DELETE_WINDOW", cart_machine.Bail)
+cart_machine.master.title("ZAutomate :: Cart Machine")
+cart_machine.mainloop()
