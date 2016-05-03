@@ -28,7 +28,7 @@ def get_new_show_id(showID):
     try:
         res = requests.get(URL_AUTOSTART, params={"showid": showID})
         return res.json()
-    except requests.exceptions.SSLError:
+    except requests.exceptions.ConnectionError:
         print "Error: Could not fetch starting show ID."
         return -1
 
@@ -88,7 +88,7 @@ def get_cart(cartType):
                 return cart
             else:
                 count += 1
-    except requests.exceptions.SSLError:
+    except requests.exceptions.ConnectionError:
         print time.asctime() + " :=: Error: Could not fetch cart."
 
     return None
@@ -129,7 +129,7 @@ def get_next_playlist(showID):
                 show["playlist"].append(track)
             else:
                 print time.asctime() + " :=: DBInterface :: Get_Next_Playlist() :: cart file \"" + filename + "\" does not exist"
-    except requests.exceptions.SSLError:
+    except requests.exceptions.ConnectionError:
         print "Error: Could not fetch playlist."
 
     return show
@@ -158,7 +158,7 @@ def get_carts():
                 if cart.Verify():
                     carts[t].append(cart)
 
-    except requests.exceptions.SSLError:
+    except requests.exceptions.ConnectionError:
         print time.asctime() + " :=: Error: Could not fetch carts."
 
     return carts
@@ -188,7 +188,7 @@ def search_library(query):
             track = Cart(trackID, t["track_name"], t["artist_name"], t["rotation"], filename)
             if track.Verify():
                 results.append(track)
-    except requests.exceptions.SSLError:
+    except requests.exceptions.ConnectionError:
         print "Error: Could not fetch search results."
 
     return results
@@ -205,5 +205,5 @@ def log_cart(cartID):
     try:
         res = requests.post(URL_LOG, params={"cartid": cartID})
         print res.text
-    except requests.exceptions.SSLError:
+    except requests.exceptions.ConnectionError:
         print time.asctime() + " :=: Caught error: Could not access cart logger."

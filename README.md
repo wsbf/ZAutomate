@@ -19,6 +19,7 @@ pylint **/*.py > lint.out
 
 ## TODO
 
+- move colors, fonts, text values to constants
 - add hourly reload to Cart Machine
 - analyze the insertion/removal of carts, thread management during Automation
 - make Auto-Slot Rotation work

@@ -4,8 +4,7 @@ import ZAutomate_DBInterface as database
 CART_WIDTH = 175
 CART_HEIGHT = 75
 
-# TODO: move all colors to constants
-
+COLOR_DEFAULT = "#DDDDDD"
 COLOR_PLAYING = "#00FF00"
 COLOR_READY = "#009999"
 COLOR_TYPES_NEW = {
@@ -33,6 +32,10 @@ COLOR_TYPES_PLAYED = {
     "O": "#999"
 }
 
+COLOR_TITLE = "#FFFFFF"
+COLOR_ISSUER = "#FFFFFF"
+COLOR_LENGTH = "#FFFF00"
+
 FONT = ('Helvetica', 10, 'bold')
 
 class GridObj(Frame):
@@ -45,15 +48,15 @@ class GridObj(Frame):
     NextCoord = None
 
     def __init__(self, parent, nextcoord='0x0'):
-        Frame.__init__(self, parent.Master, bd=1, relief='sunken', bg='red', width=CART_WIDTH, height=CART_HEIGHT)
+        Frame.__init__(self, parent.Master, bd=1, relief='sunken', bg=COLOR_DEFAULT, width=CART_WIDTH, height=CART_HEIGHT)
         self.Parent = parent
         self.NextCoord = nextcoord
 
-        self.Rec = Canvas(self, width=CART_WIDTH, height=CART_HEIGHT)
+        self.Rec = Canvas(self, width=CART_WIDTH, height=CART_HEIGHT, bg=COLOR_DEFAULT)
 
-        self._Title = self.Rec.create_text(5, 5, width=CART_WIDTH, anchor='nw', font=FONT, fill='white', text="---")
-        self._Issuer = self.Rec.create_text(CART_WIDTH / 2, 25, width=CART_WIDTH, anchor='n', font=FONT, fill='white', text="---")
-        self._Length = self.Rec.create_text(CART_WIDTH / 2, CART_HEIGHT - 15, anchor='s', font=FONT, fill='yellow', text="-:--")
+        self._Title = self.Rec.create_text(5, 5, width=CART_WIDTH, anchor='nw', font=FONT, fill=COLOR_TITLE, text="---")
+        self._Issuer = self.Rec.create_text(CART_WIDTH / 2, 25, width=CART_WIDTH, anchor='n', font=FONT, fill=COLOR_ISSUER, text="---")
+        self._Length = self.Rec.create_text(CART_WIDTH / 2, CART_HEIGHT - 15, anchor='s', font=FONT, fill=COLOR_LENGTH, text="-:--")
 
         # self.Frame['bg'] = COLOR_READY
 
@@ -69,7 +72,6 @@ class GridObj(Frame):
         self.Rec.itemconfigure(self._Title, text=self.Cart.Title)
         self.Rec.itemconfigure(self._Issuer, text=(self.Cart.Issuer + " " + self.Cart.ID))
         self.Rec.itemconfigure(self._Length, text=self.Parent.Meter.SecsFormat(foo[1]/1000))
-
         self.Rec['bg'] = COLOR_TYPES_NEW[self.Cart.cartType]
 
     def RemCart(self):
@@ -77,17 +79,15 @@ class GridObj(Frame):
         self.Rec.itemconfigure(self._Title, text='')
         self.Rec.itemconfigure(self._Issuer, text='---')
         self.Rec.itemconfigure(self._Length, text='-:--')
-        self.Rec['bg'] = '#FFF'
+        self.Rec['bg'] = COLOR_DEFAULT
 
     def HasCart(self):
         return self.Cart is not None
 
     def Reset(self):
         self.Parent.Meter.Reset()
-        try:
-            self.Rec['bg'] = COLOR_TYPES_PLAYED[self.Cart.cartType]
-        except KeyError:
-            self.Rec['bg'] = '#00F'
+
+        self.Rec['bg'] = COLOR_TYPES_PLAYED[self.Cart.cartType]
 
         self.Parent.SetActiveCart(None)
         self.Parent.SetActiveGridObj(None)

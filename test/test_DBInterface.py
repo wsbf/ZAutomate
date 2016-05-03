@@ -3,8 +3,6 @@
 import sys
 sys.path.insert(0, 'app')
 
-from ZAutomate_DBInterface import DBInterface
+import ZAutomate_DBInterface as database
 
-db = DBInterface()
-
-print db.CartMachine_Load()
+print database.get_carts()

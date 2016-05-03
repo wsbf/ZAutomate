@@ -191,7 +191,12 @@ class CartMachine(Frame):
         if self.ActiveCart is not None:
             return
 
+        print "Reloading the Cart Machine..."
+        for key in self.Grid.keys():
+            self.Grid[key].RemCart()
+
         self.load()
+        print "Cart Machine reloaded."
 
     def EndCallback(self):
         self.ActiveCart.Stop()
