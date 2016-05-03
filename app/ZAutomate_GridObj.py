@@ -39,12 +39,11 @@ COLOR_LENGTH = "#FFFF00"
 FONT = ('Helvetica', 10, 'bold')
 
 class GridObj(Frame):
-    Cart = None
-    Rec = None
-    Meter = None
-    Parent = None
+    cart = None
+    rect = None
+    is_playing = False
 
-    Playing = False
+    Parent = None
     NextCoord = None
 
     def __init__(self, parent, nextcoord='0x0'):
@@ -52,83 +51,82 @@ class GridObj(Frame):
         self.Parent = parent
         self.NextCoord = nextcoord
 
-        self.Rec = Canvas(self, width=CART_WIDTH, height=CART_HEIGHT, bg=COLOR_DEFAULT)
+        self.rect = Canvas(self, width=CART_WIDTH, height=CART_HEIGHT, bg=COLOR_DEFAULT)
 
-        self._Title = self.Rec.create_text(5, 5, width=CART_WIDTH, anchor='nw', font=FONT, fill=COLOR_TITLE, text="---")
-        self._Issuer = self.Rec.create_text(CART_WIDTH / 2, 25, width=CART_WIDTH, anchor='n', font=FONT, fill=COLOR_ISSUER, text="---")
-        self._Length = self.Rec.create_text(CART_WIDTH / 2, CART_HEIGHT - 15, anchor='s', font=FONT, fill=COLOR_LENGTH, text="-:--")
+        self._title = self.rect.create_text(5, 5, width=CART_WIDTH, anchor='nw', font=FONT, fill=COLOR_TITLE, text="---")
+        self._issuer = self.rect.create_text(CART_WIDTH / 2, 25, width=CART_WIDTH, anchor='n', font=FONT, fill=COLOR_ISSUER, text="---")
+        self._length = self.rect.create_text(CART_WIDTH / 2, CART_HEIGHT - 15, anchor='s', font=FONT, fill=COLOR_LENGTH, text="-:--")
 
         # self.Frame['bg'] = COLOR_READY
 
-        self.Rec.bind('<ButtonPress-1>', self.LeftClick)
-        self.Rec.bind('<Button-2>', self.RightClick)
-        self.Rec.bind('<Button-3>', self.RightClick)
-        self.Rec.pack()
+        self.rect.bind('<ButtonPress-1>', self.LeftClick)
+        self.rect.bind('<Button-2>', self.RightClick)
+        self.rect.bind('<Button-3>', self.RightClick)
+        self.rect.pack()
 
-    def AddCart(self, cart):
-        self.Cart = cart
+    def set_cart(self, cart):
+        self.cart = cart
 
-        foo = self.Cart.MeterFeeder()
-        self.Rec.itemconfigure(self._Title, text=self.Cart.Title)
-        self.Rec.itemconfigure(self._Issuer, text=(self.Cart.Issuer + " " + self.Cart.ID))
-        self.Rec.itemconfigure(self._Length, text=self.Parent.Meter.SecsFormat(foo[1]/1000))
-        self.Rec['bg'] = COLOR_TYPES_NEW[self.Cart.cartType]
+        foo = self.cart.MeterFeeder()
+        self.rect.itemconfigure(self._title, text=self.cart.Title)
+        self.rect.itemconfigure(self._issuer, text=(self.cart.Issuer + " " + self.cart.ID))
+        self.rect.itemconfigure(self._length, text=self.Parent.Meter.SecsFormat(foo[1]/1000))
+        self.rect['bg'] = COLOR_TYPES_NEW[self.cart.cartType]
 
-    def RemCart(self):
-        self.Cart = None
-        self.Rec.itemconfigure(self._Title, text='')
-        self.Rec.itemconfigure(self._Issuer, text='---')
-        self.Rec.itemconfigure(self._Length, text='-:--')
-        self.Rec['bg'] = COLOR_DEFAULT
+    def remove_cart(self):
+        self.cart = None
+        self.rect.itemconfigure(self._title, text='')
+        self.rect.itemconfigure(self._issuer, text='---')
+        self.rect.itemconfigure(self._length, text='-:--')
+        self.rect['bg'] = COLOR_DEFAULT
 
-    def HasCart(self):
-        return self.Cart is not None
+    def has_cart(self):
+        return self.cart is not None
 
     def Reset(self):
         self.Parent.Meter.Reset()
 
-        self.Rec['bg'] = COLOR_TYPES_PLAYED[self.Cart.cartType]
+        self.rect['bg'] = COLOR_TYPES_PLAYED[self.cart.cartType]
 
         self.Parent.SetActiveCart(None)
         self.Parent.SetActiveGridObj(None)
 
-        self.Playing = False
+        self.is_playing = False
 
     def OnComplete(self):
         self.Reset()
-        if self.NextCoord is not None and self.Parent.Grid[self.NextCoord].HasCart():
+        if self.NextCoord is not None and self.Parent.Grid[self.NextCoord].has_cart():
             self.Parent.Grid[self.NextCoord].LeftClick(None)
 
     def LeftClick(self, clickEvent):
         ### click on a non-empty cart
-        if self.Cart is not None:
+        if self.cart is not None:
 
             ### this cart is playing; stop and don't continue
-            if self.Playing:
-                self.Cart.Stop()
+            if self.is_playing:
+                self.cart.Stop()
                 if self.Parent.RewindOnPause:
-                    self.Cart.SeekToFront()
+                    self.cart.SeekToFront()
                 self.Reset()
 
             ### this cart isn't playing, and neither is any other; start!
             elif self.Parent.IsCartActive() is False:
-                self.Playing = True
+                self.is_playing = True
 
-                self.Parent.SetActiveCart(self.Cart)
+                self.Parent.SetActiveCart(self.cart)
                 self.Parent.SetActiveGridObj(self)
 
                 self.Parent.Meter.Start()
-                self.Cart.Start(self.Reset) ##self.OnComplete
-                self.Rec['bg'] = COLOR_PLAYING
-                database.log_cart(self.Cart.ID)
+                self.cart.Start(self.Reset) ##self.OnComplete
+                self.rect['bg'] = COLOR_PLAYING
+                database.log_cart(self.cart.ID)
             pass
         ### click on an empty cart; add the clipboarded cart
+        # TODO: move to DJ Studio
         else:
             try:
-                self.AddCart(self.Parent.SelectedCart)
+                self.set_cart(self.Parent.SelectedCart)
             except AttributeError:
-                ## this error will happen if self.Parent.SelectedCart is not defined
-                ## i.e. on any click empty slot in the cart machine
                 pass
 
         # TODO: move to DJ Studio
@@ -138,8 +136,8 @@ class GridObj(Frame):
             pass
 
     def RightClick(self, clickEvent):
-        if self.Parent.AllowRightClick and self.HasCart() and self.Playing is False:
-            self.RemCart()
+        if self.Parent.AllowRightClick and self.has_cart() and self.is_playing is False:
+            self.remove_cart()
 
             # TODO: move to DJ Studio
             try:
