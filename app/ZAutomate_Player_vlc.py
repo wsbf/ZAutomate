@@ -7,73 +7,54 @@ import time
 import mad
 
 class Player(object):
-    Path = None
-    Length = 0            ## always in milliseconds!
+    _command = None
+    _pid = None
+    _length = 0          # milliseconds
+    _elapsed = 0         # milliseconds
+    _is_playing = False  # may need a lock
+    _callback = None
 
-    Elapsed = 0
-    Pid = None
-
-    Thread = None
-    KeepGoing = False     ## does not need a lock; only one writer (self.stop)
-
-    ## REQUIRES :: filepath is a regular file
-    def __init__(self, filepath):
-        self.Exec = ['/usr/bin/vlc', '-I', 'dummy', '--play-and-exit']
-        self.Path = filepath
-        self.Exec.append(self.Path)
-
-
-        mf = mad.MadFile(self.Path)
-        self.Length = mf.total_time()
-
-        pass
+    def __init__(self, filename):
+        self._command = ["/usr/bin/vlc", "--intf", "dummy", "--play-and-exit", filename]
+        self._length = mad.MadFile(filename).total_time()
 
     def length(self):
-        return self.Length
+        return self._length
 
     def time_elapsed(self):
-        return self.Elapsed
+        return self._elapsed
 
-    #def set_next_song(self, path):
-    #    self.Path = path
+    def is_playing(self):
+        return self._is_playing
 
-    def play_internal(self):
-
-        while self.KeepGoing is True:
+    def _play_internal(self):
+        while self._is_playing is True:
             time.sleep(1.0)
-            self.Elapsed += 1000
-            if self.Elapsed >= self.Length:
+            self._elapsed += 1000
+            if self._elapsed >= self._length:
                 break
 
-        if self.KeepGoing is False:
-            os.kill(self.Pid, signal.SIGKILL)
+        if self._is_playing is False:
+            os.kill(self._pid, signal.SIGKILL)
 
-        if self.Callback is not None and self.KeepGoing is True:
-            print "Player :: Executing callback"
-            self.Callback()
-
-        pass
-
-    def isplaying(self):
-        return self.KeepGoing
+        if self._callback is not None and self._is_playing is True:
+            self._is_playing = False
+            self._callback()
 
     def play(self, callback=None):
-        self.Callback = callback
-
-        if self.isplaying():
+        if self.is_playing():
+            print time.asctime() + " :=: Player_vlc :: Tried to start, but already playing"
             return
 
-        self.KeepGoing = True
-        try:
-            #print "Player :: play thread starting"
-            self.Pid = subprocess.Popen(self.Exec).pid
-            self.Thread = thread.start_new_thread(self.play_internal, ( ) )
-        except:
-            print "Player :: Could not start thread"
-
+        self._pid = subprocess.Popen(self._command).pid
+        self._is_playing = True
+        self._callback = callback
+        thread.start_new_thread(self._play_internal, ())
 
     def stop(self):
-        if not(self.isplaying()):
+        if not self.is_playing():
+            print time.asctime() + " :=: Player_vlc :: Tried to stop, but not playing"
             return
-        self.KeepGoing = False
-        self.Callback = lambda: True
+
+        self._is_playing = False
+        self._callback = None

@@ -3,82 +3,59 @@ import time
 import ao
 import mad
 
-AODEV = ao.AudioDevice(0)    ## GLOBAL
+AODEV = ao.AudioDevice(0)
 
 class Player(object):
-    Path = None
-    Length = 0        ## milliseconds
-    Elapsed = 0       ## always in milliseconds!
-    Madrsc = None
-
-    Thread = None
-    KeepGoing = False # may need a lock since stop and play_internal both write
-    Devrsc = None
+    _filename = None
+    _madfile = None
+    _length = 0          # milliseconds
+    _is_playing = False  # may need a lock since stop and play_internal both write
+    _callback = None
 
     def __init__(self, filename):
-        self.FileName = filename
-        self.Madrsc = mad.MadFile(filename)
-        self.Length = self.Madrsc.total_time()
+        self._filename = filename
+        self.seek_to_front()
 
     def length(self):
-        return self.Length
+        return self._length
 
     def time_elapsed(self):
-        return self.Madrsc.current_time()
+        return self._madfile.current_time()
 
-    def set_next_song(self, path):
-        self.Path = path
+    def is_playing(self):
+        return self._is_playing
 
-    def play_internal(self):
-        try:
-            while self.KeepGoing is True:
-                buf = self.Madrsc.read()
-                if buf is not None:
-                    AODEV.play(buf, len(buf))
-                else:
-                    print time.asctime() + " :=: player_madao :: play_internal :: Buffer is empty"
-                    break
-        except:
-            print time.asctime() + " :=: Player_madao :: play_internal :: Something went terribly terribly wrong."
-            print time.asctime() + " :=: len(buf) = " + (str)(len(buf))
+    def seek_to_front(self):
+        self._madfile = mad.MadFile(self._filename)
+        self._length = self._madfile.total_time()
 
-        if self.Callback is not None and self.KeepGoing is True:
-            print time.asctime() + " :=: Player_Madao :: play_internal :: Executing callback"
-            self.SeekToFront()
-            self.KeepGoing = False
-            self.Callback()
+    def _play_internal(self):
+        while self._is_playing is True:
+            buf = self._madfile.read()
+            if buf is not None:
+                AODEV.play(buf, len(buf))
+            else:
+                print time.asctime() + " :=: Player_madao :: Buffer is empty"
+                break
 
-    def isplaying(self):
-        return self.KeepGoing
+        if self._callback is not None and self._is_playing is True:
+            self.seek_to_front()
+            self._is_playing = False
+            self._callback()
 
     def play(self, callback=None):
-        self.Callback = callback
-
-        if self.isplaying():
-            print time.asctime() + " :=: Player_madao :: play :: Tried to start, but already playing"
+        if self.is_playing():
+            print time.asctime() + " :=: Player_madao :: Tried to start, but already playing"
             return
 
-        self.KeepGoing = True
-        try:
-            print time.asctime() + " :=: Player_madao :: play :: starting new play thread"
-            self.Thread = thread.start_new_thread(self.play_internal, ( ) )
-        except:
-            print time.asctime() + " :=: Player_madao :: play :: Could not start new play thread"
+        self._is_playing = True
+        self._callback = callback
+        thread.start_new_thread(self._play_internal, ())
 
     def stop(self):
-        if not self.isplaying():
-            print time.asctime() + " :=: Player :: stop :: Tried to stop, but not playing"
+        if not self.is_playing():
+            print time.asctime() + " :=: Player_madao :: Tried to stop, but not playing"
             return
-        self.KeepGoing = False
-        self.Callback = None
 
-    def SeekToFront(self):
-        del self.Madrsc
-        try:
-            self.Madrsc = mad.MadFile(self.FileName)
-            self.Length = self.Madrsc.total_time()
-        except IOError:
-            print time.asctime() + " :=: Player_Madao :: SeekToFront :: IOError encountered!"
-            print time.asctime() + " :=: Player_Madao :: SeekToFront :: Couldn't open file " + \
-                  (str)(self.FileName) + "\nIn the immortal words of Zach," +\
-                  "I hope you're debugging, Yates"
+        self._is_playing = False
+        self._callback = None

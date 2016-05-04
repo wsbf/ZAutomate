@@ -1,88 +1,50 @@
-import os
-import signal
-import time
+from Tkinter import Tk
 import tkSnack
 
-DEBUG_MUTE = False
+# TODO: provide reference to Tk root
+root = Tk()
+tkSnack.initializeSnack(root)
 
 class Player(object):
-    Path = None
-    Length = 0        ## milliseconds
-    Elapsed = 0
-    Snack = None
-    KeepGoing = False
-    Callback = None
+    _filename = None
+    _snack = None
+    _length = 0          # milliseconds
+    _is_playing = False
+    _callback = None
 
-    def __init__(self, root, filepath):
-        self.Path = filepath
-        tkSnack.initializeSnack(root)
-
-        self.Snack = tkSnack.Sound(file=self.Path) ## can use load= instead
-        self.Length = self.Snack.length(unit='SECONDS') * 1000
-
-        if DEBUG_MUTE:
-            tkSnack.audio.play_gain(0)
+    def __init__(self, filename):
+        self._filename = filename
+        self.seek_to_front()
 
     def length(self):
-        return self.Length
+        return self._length
 
     def time_elapsed(self):
-        #print "time elapsed: ",
-        #print tkSnack.audio.elapsedTime()
-        return tkSnack.audio.elapsedTime() * 1000 ### milliseconds!
+        return tkSnack.audio.elapsedTime() * 1000
 
-        ### more for lulz than anything else, make the meter show a random time
-        #import random
-        #random.seed()
-        #return random.randint(0, self.length())
+    def is_playing(self):
+        return self._is_playing
 
-    def isplaying(self):
-        return self.KeepGoing
-
-    def set_next_song(self, path):
-        self.Path = path
-## todo?
-    def play_internal(self):
-
-        while self.KeepGoing is True:
-            time.sleep(1.0)
-            self.Elapsed += 1000
-            if self.Elapsed >= self.Length:
-                break
-
-        if self.KeepGoing is False:
-            os.kill(self.Pid, signal.SIGKILL)
-
-        if self.Callback is not None and self.KeepGoing is True:
-            print "Player :: Executing callback"
-            self.Callback()
-
-        pass
+    def seek_to_front(self):
+        self._snack = tkSnack.Sound(load=self._filename)
+        self._length = self._snack.length(unit='SECONDS') * 1000
 
     def play(self, callback=None):
-###        print "\t Snack Playing"
-        self.Callback = callback
-
-        if(self.isplaying()):
+        if self.is_playing():
+            print time.asctime() + " :=: Player_snack :: Tried to start, but already playing"
             return
 
-        self.KeepGoing = True
-        try:
-## todo
-            self.Snack.play(blocking=False, command=self.Callback)
-            #self.Thread = thread.start_new_thread(self.play_internal, ( ) )
-        except:
-            print "Player :: Could not start thread"
-            pass
+        self._is_playing = True
+        self._callback = callback
+        self._snack.play(blocking=False, command=self._callback)
 
     def stop(self):
-        if not(self.isplaying()):
+        if not self.is_playing():
+            print time.asctime() + " :=: Player_snack :: Tried to stop, but not playing"
             return
-        self.KeepGoing = False
-        self.Callback = self.nothing
-        self.Snack.stop()
-        self.Snack = tkSnack.Sound(file=self.Path)
 
-    def nothing(self):
-        print "NOTHING going on here ;-)"
-        pass
+        self._is_playing = False
+        self._callback = None
+        self._snack.stop()
+
+        self.seek_to_front()

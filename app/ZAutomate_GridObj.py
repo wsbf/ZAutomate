@@ -106,7 +106,7 @@ class GridObj(Frame):
             if self.is_playing:
                 self.cart.stop()
                 if self.Parent.RewindOnPause:
-                    self.cart.SeekToFront()
+                    self.cart.seek_to_front()
                 self.Reset()
 
             ### this cart isn't playing, and neither is any other; start!
