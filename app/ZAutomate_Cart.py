@@ -1,5 +1,5 @@
 import time
-from ZAutomate_Player_snack import Player
+from ZAutomate_Player_madao import Player
 
 class Cart(object):
     cart_id = None

@@ -2,181 +2,98 @@ import thread
 import time
 from Tkinter import Canvas
 
+# METER_WIDTH = 0
+METER_HEIGHT = 135
 METER_INTERVAL = 0.25
 
+COLOR_METER_BG = "#000000"
+COLOR_METER_TEXT = "#33CCCC"
+
+FONT_HEAD = ("Helvetica", 22, "bold")
+FONT_SMALL = ("Helvetica", 12)
+FONT_NUM = ("Courier", 22, "bold")
+
 class Meter(Canvas):
-    Value = 0
+    _data_callback = None  # called on every "tick" of the Meter to get the next value
+    _end_callback = None   # called when the Meter reaches (about) 100%
+    _is_playing = False
 
-    GetDataFunc = None        ## called on every 'tick' of the Meter to get the next value
-    TransitionFunc = None    ## called when the Meter reaches (about) 100%
+    _position = None
+    _length = None
+    _cue = None
+    _title = None
+    _artist = None
 
-    Thread = None
-    KeepGoing = True
+    def __init__(self, master, width, data_callback, end_callback):
+        Canvas.__init__(self, master, bg=COLOR_METER_BG, borderwidth="2", relief="groove", width=width, height=METER_HEIGHT)
 
-    Height = 135
-    Width = 0
+        self._data_callback = data_callback
+        self._end_callback = end_callback
 
-    ###YATES_COMMENT: getDataFunc is the function which provides the meter with
-    ###                    the data necessary to update the meter.  The return type is
-    ###                    a n-tuple (4?  6?) that contains the time info and artist info
-    ###                    of the current track playing.  In ZA_Automation, it's the
-    ###                    MeterFeeder() function.
+        self._width = (int)(self.cget("width"))
+        self._x0 = 0
+        self._y0 = METER_HEIGHT - 25
+        self._x1 = self._width + 5
+        self._y1 = METER_HEIGHT
 
-    ###YATES_COMMENT:    transitionFunction is the "transition" function for the meter
-    ###
-    def __init__(self, master, width, getDataFunc, transitionFunc):
-        ## the width passed in here is NOT to be used inside the canvas
-        ###YATES_COMMENT:    Function pointers for... callbacks?
-        self.GetDataFunc = getDataFunc
-        self.TransitionFunc = transitionFunc
+        self.create_text(10, 60, anchor="w", font=FONT_SMALL, text="Position", fill=COLOR_METER_TEXT)
+        self.create_text(140, 60, anchor="w", font=FONT_SMALL, text="Length", fill=COLOR_METER_TEXT)
+        self.create_text(270, 60, anchor="w", font=FONT_SMALL, text="To Cue", fill=COLOR_METER_TEXT)
 
-        ## formatting / graphical stuff
-        MeterBG = '#000' # '#666'
-        ###YATES_COMMENT: This is the font-color of the text displayed on the whole meter.
-        Fill = '#33CCCC'
-        HeadFont = ('Helvetica', 22, 'bold')
-        SmallFont = ('Helvetica', 12)
-        NumFont = ('Courier', 22, 'bold')
-
-        ## parent class instantiation
-        Canvas.__init__(self, master, bg=MeterBG, borderwidth='2', relief='groove',
-            width=width, height=self.Height)
-
-        self.Width = (int)(self.cget('width'))
-        self.MeterX0 = 0
-        self.MeterY0 = self.Height - 25
-        self.MeterX1 = self.Width + 5
-        self.MeterY1 = self.Height
-        self.Height = self.MeterY1
-
-        ##self.create_rectangle(1400, 0, self.Width+50, 100, fill='red')
-        # x0 y0 x1 y1
-        ##self.create_rectangle(0, 0, self.Width,100, fill='red')
-
-        self._Title = self.create_text(10, 20, anchor='w', font=HeadFont, text='--', fill=Fill)
-
-        self._Artist = self.create_text(self.Width, 20, anchor='e', font=HeadFont, text='--', fill=Fill)
-
-
-        ###self._TopCtr = self.create_text(self.Width/2, 50, anchor='center', font=HeadFont, text='Ready', fill=Fill)
-
-        self._PosLbl = self.create_text(10, 60, anchor='w', font=SmallFont, text='Position', fill=Fill)
-        self._LenLbl = self.create_text(140, 60, anchor='w', font=SmallFont, text='Length', fill=Fill)
-        self._CueLbl = self.create_text(270, 60, anchor='w', font=SmallFont, text='To Cue', fill=Fill)
-
-        self._Position = self.create_text(10, 85, anchor='w', font=NumFont, text='0:00', fill=Fill)
-        self._Length = self.create_text(140, 85, anchor='w', font=NumFont, text='0:00', fill=Fill)
-        self._Cue = self.create_text(270, 85, anchor='w', font=NumFont, text='0:00', fill=Fill)
+        self._position = self.create_text(10, 85, anchor="w", font=FONT_NUM, text="0:00", fill=COLOR_METER_TEXT)
+        self._length = self.create_text(140, 85, anchor="w", font=FONT_NUM, text="0:00", fill=COLOR_METER_TEXT)
+        self._cue = self.create_text(270, 85, anchor="w", font=FONT_NUM, text="0:00", fill=COLOR_METER_TEXT)
+        self._title = self.create_text(10, 20, anchor="w", font=FONT_HEAD, text="--", fill=COLOR_METER_TEXT)
+        self._artist = self.create_text(self._width, 20, anchor="e", font=FONT_HEAD, text="--", fill=COLOR_METER_TEXT)
 
         # x0 y0 x1 y1
-        ###YATES_COMMENT: This is the green label.  We create it across the width of the screen.
-        self._BGBar = self.create_rectangle(self.MeterX0, self.MeterY0,
-            self.MeterX1, self.MeterY1, fill='#008500', width=1)
-
-        ###YATES_COMMENT: This is the red label.  We create a fraction
-        self._Bar = self.create_rectangle(self.MeterX0, self.MeterY0,
-            0, self.MeterY1, fill='#FF0000', width=1)
-
-    def Start(self):
-        self.KeepGoing = True
-        try:
-            self.Thread = thread.start_new_thread(self.CheckCallback, ())
-        except:
-            print "Meter :: Error :: Could not start thread!"
-
-    def Change(self, fourtuple):
-        ## fourtuple contains: position, length, title, issuer
-        ## position and length are in milliseconds
-        ###print "\t---CHANGING METER"
-
-
-        if self.KeepGoing is True:
-        #if int(fourtuple[0]) < 1000:
-        #    pass
-        #else:
-            try:
-                ###YATES_COMMENT: fourtuple[0] is time_elapsed
-                ###                    fourtuple[1] is length
-                ###                    Value = [0...1] percentage done with a song.
-                value = (float)(fourtuple[0]) / (float)(fourtuple[1])
-
-            except ZeroDivisionError:
-                value = 0.0
-                print "Meter :: ERROR :: Length is 0 on " + fourtuple[2] + " by " + fourtuple[3]
-
-            position = (int)(fourtuple[0]) / 1000
-
-            length = (int)(fourtuple[1]) / 1000
-            cue = length - position
-            if position > length:
-                print "Meter :: Change :: Position: " + (str)(position) + " > " + (str)(length) + " :Length"
-            if cue < 0:
-                print "Meter :: Change :: Cue is less than 0!  Printing Debug Statements"
-                print "(Time_Elapsed, Length, Title, Issuer, ID, Type)"
-                print (str)(fourtuple)
-            title = fourtuple[2]
-            artist = fourtuple[3]
-
-            ###self.itemconfigure(self._TopCtr, text=Array[0])
-            self.itemconfigure(self._Position, text=self.SecsFormat(position))
-            self.itemconfigure(self._Length, text=self.SecsFormat(length))
-
-
-            self.itemconfigure(self._Cue, text=self.SecsFormat(cue))
-
-            self.itemconfigure(self._Title, text=title)
-            self.itemconfigure(self._Artist, text=artist)
-
-            self.coords(self._Bar, self.MeterX0, self.MeterY0, int(self.Width * value), self.MeterY1)
-
-    def CheckCallback(self):
-        lastTimePosition = -1
-        while self.KeepGoing is True:
-###            print thread.get_ident()
-            data = self.GetDataFunc()
-            self.Change(data)
-            time.sleep(METER_INTERVAL)
-
-    def Reset(self):
-###        print "Meter :: Resetting"
-        #self.itemconfigure(self._Title, text='--' )
-        #self.itemconfigure(self._Artist, text='--' )
-        self.KeepGoing = False
-
-        self.Value = 0
-        self.itemconfigure(self._Position, text='0:00')
-        self.itemconfigure(self._Length, text='0:00')
-        self.itemconfigure(self._Cue, text='0:00')
-        self.itemconfigure(self._Title, text='--')
-        self.itemconfigure(self._Artist, text='--')
-        self.coords(self._Bar, 0, self.MeterY0, 0, self.MeterY1)
+        self._bar_bg = self.create_rectangle(self._x0, self._y0, self._x1, self._y1, fill="#008500", width=1)
+        self._bar_fg = self.create_rectangle(self._x0, self._y0, 0, self._y1, fill="#FF0000", width=1)
 
     ## convert 180 seconds into 3:00
-    def SecsFormat(self, secs):
-        hours = 0
-        minutes = 0
-        seconds = 0
+    def _get_fmt_time(self, seconds):
+        return time.strftime("%M:%S", time.localtime(seconds))
 
-        if secs is None:
-            return "Not Ready"
-        while secs >= 3600:
-            secs -= 3600
-            hours += 1
-        while secs >= 60:
-            secs -= 60
-            minutes += 1
-        seconds = secs
+    def _run(self):
+        while self._is_playing is True:
+            # (position [ms], length [ms], title, artist, id, type)
+            data = self._data_callback()
 
-        fmt = ""
-        if hours is not 0:
-            fmt += str(hours) + ":"
-        if minutes < 10:
-            fmt += "0"
-        fmt += str(minutes) + ":"
+            # if data[0] >= data[1]:
+            #     break
 
-        seconds = int(seconds)
-        if seconds < 10:
-            fmt += "0"
-        fmt += str(seconds) + ""
+            if data[1] is not 0:
+                value = (float)(data[0]) / (float)(data[1])
+            else:
+                value = 0.0
 
-        return fmt
+            position = (int)(data[0]) / 1000
+            length = (int)(data[1]) / 1000
+            cue = length - position
+            title = data[2]
+            artist = data[3]
+
+            self.itemconfigure(self._position, text=self._get_fmt_time(position))
+            self.itemconfigure(self._length, text=self._get_fmt_time(length))
+            self.itemconfigure(self._cue, text=self._get_fmt_time(cue))
+            self.itemconfigure(self._title, text=title)
+            self.itemconfigure(self._artist, text=artist)
+            self.coords(self._bar_fg, self._x0, self._y0, int(self._width * value), self._y1)
+
+            time.sleep(METER_INTERVAL)
+
+        # if self._end_callback is not None:
+        #     self._end_callback()
+
+    def start(self):
+        self._is_playing = True
+        thread.start_new_thread(self._run, ())
+
+    def reset(self):
+        self._is_playing = False
+        self.itemconfigure(self._position, text=self._get_fmt_time(0))
+        self.itemconfigure(self._length, text=self._get_fmt_time(0))
+        self.itemconfigure(self._cue, text=self._get_fmt_time(0))
+        self.itemconfigure(self._title, text="--")
+        self.itemconfigure(self._artist, text="--")
+        self.coords(self._bar_fg, 0, self._y0, 0, self._y1)

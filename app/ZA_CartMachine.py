@@ -71,8 +71,7 @@ class CartMachine(Frame):
         reload_button.grid(row=0, column=self.Cols - 1)
 
         # initialize the meter
-        self.Meter = Meter(self.Master, METER_WIDTH, self.MeterFeeder, \
-                     self.EndCallback)
+        self.Meter = Meter(self.Master, METER_WIDTH, self.MeterFeeder, None)
         self.Meter.grid(row=1, column=0, columnspan=self.Cols) #, sticky=E+W
         ##self.Meter.grid_propagate(0)
 

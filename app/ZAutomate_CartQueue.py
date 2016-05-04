@@ -81,7 +81,7 @@ class CartQueue(object):
         ###YATES_COMMENT: What/Where is MeterFeeder?
         ###YATES_ANSWER: It's a Function or Macro, defined at the bottom,
         ###                  it returns self.Arr[0].MeterFeeder();
-        self.Meter = Meter(master, width - 10, self.MeterFeeder, self.Transition)
+        self.Meter = Meter(master, width - 10, self.MeterFeeder, None)
         self.Meter.grid(row=1, column=0, columnspan=4)
 
     def GetQueue(self):
@@ -99,7 +99,7 @@ class CartQueue(object):
 
             # stop the cart
             self.Arr[0].stop()
-            self.Meter.Reset()
+            self.Meter.reset()
 
             # move the cart to the played list
             self.PlayedArr.append(self.Arr.pop(0))
@@ -283,7 +283,7 @@ class CartQueue(object):
             self.InsertCarts()
 
         print time.asctime() + " :=: starting " + self.Arr[0].PrintCart()
-        self.Meter.Start()
+        self.Meter.start()
         self.Arr[0].start(self.Transition)
         database.log_cart(self.Arr[0].cart_id)
 

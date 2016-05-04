@@ -48,7 +48,7 @@ class Studio(Frame):
         title = Label(self.Master, fg='#000', font=('Helvetica', 36, 'bold italic'), text='ZAutomate :: DJ Studio')
         title.grid(row=0, column=0, columnspan=self.Cols)
 
-        self.Meter = Meter(self.Master, METER_WIDTH, self.MeterFeeder, self.EndCallback)
+        self.Meter = Meter(self.Master, METER_WIDTH, self.MeterFeeder, None)
         self.Meter.grid(row=1, column=0, columnspan=self.Cols) #, sticky=E+W
 
         self.DualBox = DualBox(self)

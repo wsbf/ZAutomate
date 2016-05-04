@@ -2,41 +2,46 @@
 
 import sys
 import time
+import thread
 sys.path.insert(0, 'app')
 
 from Tkinter import Tk, Frame, Canvas
 from ZAutomate_Meter import Meter
 
+NUM_COLS = 6
 CART_WIDTH = 200
 CART_MARGIN = 10
 
-METER_WIDTH = 1250
+METER_WIDTH = 1000
 
 class Test(Frame):
-    Master = None
+    _position = 0
+    _length = 10
 
     def __init__(self, parent):
         Frame.__init__(self)
-        self.Master = parent
-        self.Cols = 6
 
-        width = (CART_WIDTH + CART_MARGIN) * self.Cols
+        width = (CART_WIDTH + CART_MARGIN) * NUM_COLS
         width = METER_WIDTH
 
-        self.Meter = Meter(self.Master, width, self.MeterFeeder, self.EndCallback)
-        #self.Meter = Canvas(self.Master, width=50, height=50, bg='#0F0')
+        self.Meter = Meter(parent, width, self._get_meter_data, self._end_callback)
+        self.Meter.grid(row=0, column=0, columnspan=NUM_COLS) #, sticky=E+W
 
-        self.Meter.grid(row=0,column=0,columnspan=self.Cols) #, sticky=E+W
+        Canvas(parent, width=900, height=100, bg='#00F').grid(row=2, column=0, columnspan=NUM_COLS)
 
-        Canvas(self.Master, width=900, height=100, bg='#00F').grid(row=2, column=0, columnspan=self.Cols)
+        self.Meter.start()
+        thread.start_new_thread(self._run, ())
 
-        #self.Meter.Start()
+    def _run(self):
+        while True:
+            self._position = (self._position + 1) % self._length
+            time.sleep(1.0)
 
-    def EndCallback(self):
-        pass
+    def _get_meter_data(self):
+        return (self._position, self._length, "Fruity", "Blergs", None, None)
 
-    def MeterFeeder(self):
-        return (0, 0, "Fruity", "Blergs", None, None)
+    def _end_callback(self):
+        print "Meter finished."
 
 root = Tk()
 test = Test(root)

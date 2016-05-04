@@ -84,7 +84,7 @@ class GridObj(Frame):
         return self.cart is not None
 
     def Reset(self):
-        self.Parent.Meter.Reset()
+        self.Parent.Meter.reset()
 
         self.rect['bg'] = COLOR_TYPES_PLAYED[self.cart.cart_type]
 
@@ -116,7 +116,7 @@ class GridObj(Frame):
                 self.Parent.SetActiveCart(self.cart)
                 self.Parent.SetActiveGridObj(self)
 
-                self.Parent.Meter.Start()
+                self.Parent.Meter.start()
                 self.cart.start(self.Reset) ##self.OnComplete
                 self.rect['bg'] = COLOR_PLAYING
                 database.log_cart(self.cart.cart_id)
