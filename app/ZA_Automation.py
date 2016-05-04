@@ -1,150 +1,138 @@
 #!/usr/bin/env python
 
 import Tkinter
-from Tkinter import Tk, Label, StringVar, Button, Frame, Scrollbar, Listbox
+from Tkinter import Label, StringVar, Button, Frame, Scrollbar, Listbox
 from ZAutomate_CartQueue import CartQueue
 
-SIZE_X = 800
-SIZE_Y = 600
-OFFSET_X = 0
-OFFSET_Y = 0
-WINDOW_PARAMS = (str)(SIZE_X) + "x" + (str)(SIZE_Y) \
-        + "+" + (str)(OFFSET_X) + "+" + (str)(OFFSET_Y)
+COLOR_BUTTON_STOPPED = "#008500"
+COLOR_BUTTON_PLAYING = "#FFFF00"
+COLOR_BUTTON_STOPPING = "#FF0000"
 
-class Automation(object):
+FONT_TITLE = ('Helvetica', 36, 'bold italic')
+FONT = ('Helvetica', 12, 'bold')
+
+TEXT_TITLE = "ZAutomate :: Automation"
+TEXT_BUTTON_STOPPED = "START"
+TEXT_BUTTON_PLAYING = "STOP"
+TEXT_BUTTON_STOPPING = "STOP NOW"
+TEXT_PLAYLIST_TIME = "Start Time"
+TEXT_PLAYLIST_TRACK = "Track"
+TEXT_PLAYLIST_ARTIST = "Artist"
+
+class Automation(Frame):
     STATE_STOPPED = 1
     STATE_PLAYING = 2
     STATE_STOPPING = 3
 
-    Master = None
-    CartQueue = None
-    state = STATE_STOPPED
+    _state = None
+    _cart_queue = None
 
-    def __init__(self, master, width):
-        self.Master = master
-        self.CartQueue = CartQueue(self.Master, width, self.UIUpdate)
+    _button_text = None
+    _button = None
 
-        ###YATES_COMMENT: This may be a dead variable.  No one ever seems to be
-        ###                    using self.font, but rather font=('Helvetica', '12', 'bold')
-        ###                    as an inline parameter
-        ###YATES_ANSWER:  In the calls to Label, passing in self.font flags an
-        ###               error, where as saying font=('Helvetica', 12, 'bold')
-        ###               does not.
-        #self.font = ('Helvetica', 12, 'bold')
+    _list_time = None
+    _list_track = None
+    _list_artist = None
 
-        ###YATES_COMMENT: Sets the title and its attributes for the Window.
-        self.Title = Label(self.Master, fg='#000', font=('Helvetica', 36, 'bold italic'), text='ZAutomate :: Automation')
-        self.Title.grid(row=0, column=0, columnspan=3)
+    def __init__(self):
+        Frame.__init__(self)
 
-        ###YATES_COMMENT: Initializes the START button on start up.
-        ###                    textvariable=self.ButtonContent is how the button text is populated
-        ###                    command=self.ButtonHandler defines the call-back function for when the button is pressed
-        self.ButtonContent = StringVar()
-        self.ButtonContent.set('  START    ')
-        self.Button = Button(self.Master, textvariable=self.ButtonContent, command=self.ButtonHandler, width=16, height=2)
-        ###YAtES_COMMENT: .config() function bigs the padding, background and foreground color and button style.
-        self.Button.config(bd=2, relief='groove', bg='#008500', highlightbackground='#008500')
+        # initialize title
+        title = Label(self.master, fg='#000', font=FONT_TITLE, text=TEXT_TITLE)
+        title.grid(row=0, column=0, columnspan=3)
 
-        self.Button.grid(row=0, column=3)
+        # initialize button and state
+        self._state = self.STATE_STOPPED
 
-        ###YATES_COMMENT: Allocates a new frame, and populates the frame with labels for Cue Time, Track Title, Artist Name
-        PlistFr = Frame(self.Master, bd=2, relief=Tkinter.SUNKEN)
-        Label(PlistFr, font=('Helvetica', 12, 'bold'), anchor=Tkinter.CENTER, width=16, text='Cue Time').grid(row=0, column=0)
-        Label(PlistFr, font=('Helvetica', 12, 'bold'), anchor=Tkinter.CENTER, width=32, text='Track Title').grid(row=0, column=1)
-        Label(PlistFr, font=('Helvetica', 12, 'bold'), anchor=Tkinter.CENTER, width=32, text='Artist Name').grid(row=0, column=2)
+        self._button_text = StringVar()
+        self._button_text.set(TEXT_BUTTON_STOPPED)
 
-        InPlFr = Frame(PlistFr)
-        scroll = Scrollbar(InPlFr, orient="vertical", command=self.ScrollHandler)
-        self.CueBox = Listbox(InPlFr, selectmode='single', yscrollcommand=scroll.set, exportselection=0, width=16, height=20)
-        self.TrackBox = Listbox(InPlFr, selectmode='single', yscrollcommand=scroll.set, exportselection=0, width=32, height=20)
-        self.ArtistBox = Listbox(InPlFr, selectmode='single', yscrollcommand=scroll.set, exportselection=0, width=32, height=20)
+        self._button = Button(self.master, textvariable=self._button_text, command=self._update_state, width=16, height=2)
+        self._button.config(bd=2, bg=COLOR_BUTTON_STOPPED, highlightbackground=COLOR_BUTTON_STOPPED)
+        self._button.grid(row=0, column=3)
+
+        # initialize playlist view
+        playlist = Frame(self.master, bd=2, relief=Tkinter.SUNKEN)
+        Label(playlist, font=FONT, anchor=Tkinter.CENTER, width=16, text=TEXT_PLAYLIST_TIME).grid(row=0, column=0)
+        Label(playlist, font=FONT, anchor=Tkinter.CENTER, width=32, text=TEXT_PLAYLIST_TRACK).grid(row=0, column=1)
+        Label(playlist, font=FONT, anchor=Tkinter.CENTER, width=32, text=TEXT_PLAYLIST_ARTIST).grid(row=0, column=2)
+
+        inner_playlist = Frame(playlist)
+        scroll = Scrollbar(inner_playlist, orient="vertical", command=self._scroll_playlist)
+        self._list_time = Listbox(inner_playlist, selectmode='single', yscrollcommand=scroll.set, exportselection=0, width=16, height=20)
+        self._list_track = Listbox(inner_playlist, selectmode='single', yscrollcommand=scroll.set, exportselection=0, width=32, height=20)
+        self._list_artist = Listbox(inner_playlist, selectmode='single', yscrollcommand=scroll.set, exportselection=0, width=32, height=20)
 
         scroll.pack(side="right", fill="y")
-        self.CueBox.pack(side="left", fill="x", expand=True, padx=2, pady=2)
-        self.TrackBox.pack(side="left", fill="x", expand=True, padx=2, pady=2)
-        self.ArtistBox.pack(side="left", fill="x", expand=True, padx=2, pady=2)
+        self._list_time.pack(side="left", fill="x", expand=True, padx=2, pady=2)
+        self._list_track.pack(side="left", fill="x", expand=True, padx=2, pady=2)
+        self._list_artist.pack(side="left", fill="x", expand=True, padx=2, pady=2)
 
-        InPlFr.grid(row=1, column=0, columnspan=3)
-        PlistFr.grid(row=4, column=0, columnspan=4)
+        inner_playlist.grid(row=1, column=0, columnspan=3)
+        playlist.grid(row=4, column=0, columnspan=4)
 
-        self.CartQueue.AddTracks()
-        self.UIUpdate()
+        self._cart_queue = CartQueue(self.master, self._update_ui)
+        self._cart_queue.add_tracks()
+        self._update_ui()
 
     ###YATES_COMMENT: Event Handler for scrolling through the three Windows.
-    def ScrollHandler(self, *args):
-        self.CueBox.yview(*args)
-        self.TrackBox.yview(*args)
-        self.ArtistBox.yview(*args)
+    def _scroll_playlist(self, *args):
+        self._list_time.yview(*args)
+        self._list_track.yview(*args)
+        self._list_artist.yview(*args)
 
-    ###YATES_COMMENT: ButtonHandler for Start->Stopping->Stopped state machine
-    def ButtonHandler(self):
-        if self.state is self.STATE_STOPPED:
-            self.AutoStart()
-            self.ButtonContent.set('    STOP    ')
-            self.Button.config(bg='#FF0', highlightbackground='#FF0')
-        elif self.state is self.STATE_PLAYING:
-            self.AutoStop()
-            self.ButtonContent.set(' STOPPING ')
-            self.Button.config(bg='#F00', highlightbackground='#F00')
-        elif self.state is self.STATE_STOPPING:
-            self.AutoStopNow()
-            self.ButtonContent.set('  START    ')
-            self.Button.config(bg='#008500', highlightbackground='#008500')
+    ###YATES_COMMENT: Event Handler for Start->Stopping->Stopped state machine
+    def _update_state(self):
+        if self._state is self.STATE_STOPPED:
+            self.start()
+        elif self._state is self.STATE_PLAYING:
+            self.stop_soft()
+        elif self._state is self.STATE_STOPPING:
+            self.stop_hard()
 
-    ###YATES_COMMENT: Function to Start playing Automation...
-    def AutoStart(self):
+    def start(self):
         print "Starting Automation..."
-        self.CartQueue.Start(True)
-        self.state = self.STATE_PLAYING
+        self._cart_queue.start(True)
+        self._state = self.STATE_PLAYING
+        self._button_text.set(TEXT_BUTTON_PLAYING)
+        self._button.config(bg=COLOR_BUTTON_PLAYING, highlightbackground=COLOR_BUTTON_PLAYING)
 
-    ###YATES_COMMENT: Button to Stop playing Automation after this song.
-    def AutoStop(self):
+    def stop_soft(self):
         print "Stopping Automation after this track..."
-        self.CartQueue.StopSoon()
-        self.state = self.STATE_STOPPING
+        self._cart_queue.stop_soft()
+        self._state = self.STATE_STOPPING
+        self._button_text.set(TEXT_BUTTON_STOPPING)
+        self._button.config(bg=COLOR_BUTTON_STOPPING, highlightbackground=COLOR_BUTTON_STOPPING)
 
-    ###YATES_COMMENT: Button to stop playing Automation now.
-    def AutoStopNow(self):
+    def stop_hard(self):
         print "Stopping Automation immediately."
-        self.CartQueue.Transition()
-        self.state = self.STATE_STOPPED
+        self._cart_queue.transition()
+        self._state = self.STATE_STOPPED
+        self._button_text.set(TEXT_BUTTON_STOPPED)
+        self._button.config(bg=COLOR_BUTTON_STOPPED, highlightbackground=COLOR_BUTTON_STOPPED)
 
-    # callback: when anything happens in CartQueue, run this to update the UI's state
-    def UIUpdate(self):
-        ## clear, then reset, the playlist
-        self.CueBox.delete(0, Tkinter.END)
-        self.TrackBox.delete(0, Tkinter.END)
-        self.ArtistBox.delete(0, Tkinter.END)
+    # callback: when anything happens in _cart_queue, run this to update the UI's state
+    def _update_ui(self):
+        # clear and reset the playlist
+        self._list_time.delete(0, Tkinter.END)
+        self._list_track.delete(0, Tkinter.END)
+        self._list_artist.delete(0, Tkinter.END)
 
-        ###YATES_COMMENT: Appends the CueTime, TrackName, ArtistName to each of the Boxes.
-        items = [(c.GetFmtStartTime(), c.title, c.issuer) for c in self.CartQueue.GetQueue()]
+        for cart in self._cart_queue.get_queue():
+            self._list_time.insert(Tkinter.END, cart.GetFmtStartTime())
+            self._list_track.insert(Tkinter.END, cart.title)
+            self._list_artist.insert(Tkinter.END, cart.issuer)
 
-        for item in items:
-            self.CueBox.insert(Tkinter.END, item[0])
-            self.TrackBox.insert(Tkinter.END, item[1])
-            self.ArtistBox.insert(Tkinter.END, item[2])
+        # HACK: update the button state if a soft stop occured
+        if self._state is self.STATE_STOPPING:
+            self._state = self.STATE_STOPPED
+            self._button_text.set(TEXT_BUTTON_STOPPED)
+            self._button.config(bg=COLOR_BUTTON_STOPPED, highlightbackground=COLOR_BUTTON_STOPPED)
 
-        ## reset (?) the button
-        ###YATES_COMMENT: Presumably, if IsStopping is true, we've pressed the Stop button
-        ###                    to stop at the end of the track and nothign will happen between
-        ###                    pressing stop and the track ending.  So next time IsStopping is true,
-        ###                    set the ButtonContent to start, so next time the button is pushed
-        ###                    the ButtonHandler will properly start the music.
-        if self.CartQueue.IsStopping():
-            self.ButtonContent.set('  START    ')
-            self.Button.config(bg='#008500', highlightbackground='#008500')
-        ###What is the state of IsStopping after this?  Shouldn't IsStopping be
-        ###false, as the UIUpdate is called when we stop?
+    def destroy(self):
+        self._cart_queue.save()
 
-    def Bail(self):
-        self.CartQueue.Dequeue()
-        self.CartQueue.Save()
-        self.Master.destroy()
-
-root = Tk()
-root.geometry(WINDOW_PARAMS)
-
-automation = Automation(root, SIZE_X)
-root.protocol("WM_DELETE_WINDOW", automation.Bail)
-root.title("ZAutomate :: Automation")
-root.mainloop()
+automation = Automation()
+automation.master.protocol("WM_DELETE_WINDOW", automation.master.destroy)
+automation.master.title(TEXT_TITLE)
+automation.master.mainloop()
