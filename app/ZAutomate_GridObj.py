@@ -39,108 +39,111 @@ COLOR_LENGTH = "#FFFF00"
 FONT = ('Helvetica', 10, 'bold')
 
 class GridObj(Frame):
-    cart = None
-    rect = None
-    is_playing = False
+    _parent = None
+    _enable_remove = False
+    _next_key = None
 
-    Parent = None
-    NextCoord = None
+    _rect = None
+    _title = None
+    _issuer = None
+    _length = None
 
-    def __init__(self, parent, nextcoord='0x0'):
-        Frame.__init__(self, parent.Master, bd=1, relief='sunken', bg=COLOR_DEFAULT, width=CART_WIDTH, height=CART_HEIGHT)
-        self.Parent = parent
-        self.NextCoord = nextcoord
+    _cart = None
+    _is_playing = False
 
-        self.rect = Canvas(self, width=CART_WIDTH, height=CART_HEIGHT, bg=COLOR_DEFAULT)
+    def __init__(self, parent, enable_remove, next_key=None):
+        Frame.__init__(self, parent.master, bd=1, relief='sunken', bg=COLOR_DEFAULT, width=CART_WIDTH, height=CART_HEIGHT)
+        self._parent = parent
+        self._enable_remove = enable_remove
+        self._next_key = next_key
 
-        self._title = self.rect.create_text(5, 5, width=CART_WIDTH, anchor='nw', font=FONT, fill=COLOR_TITLE, text="---")
-        self._issuer = self.rect.create_text(CART_WIDTH / 2, 25, width=CART_WIDTH, anchor='n', font=FONT, fill=COLOR_ISSUER, text="---")
-        self._length = self.rect.create_text(CART_WIDTH / 2, CART_HEIGHT - 15, anchor='s', font=FONT, fill=COLOR_LENGTH, text="-:--")
+        self._rect = Canvas(self, width=CART_WIDTH, height=CART_HEIGHT, bg=COLOR_DEFAULT)
 
-        # self.Frame['bg'] = COLOR_READY
+        self._title = self._rect.create_text(5, 5, width=CART_WIDTH, anchor='nw', font=FONT, fill=COLOR_TITLE, text="---")
+        self._issuer = self._rect.create_text(CART_WIDTH / 2, 25, width=CART_WIDTH, anchor='n', font=FONT, fill=COLOR_ISSUER, text="---")
+        self._length = self._rect.create_text(CART_WIDTH / 2, CART_HEIGHT - 15, anchor='s', font=FONT, fill=COLOR_LENGTH, text="-:--")
 
-        self.rect.bind('<ButtonPress-1>', self.LeftClick)
-        self.rect.bind('<Button-2>', self.RightClick)
-        self.rect.bind('<Button-3>', self.RightClick)
-        self.rect.pack()
+        self._rect.bind('<ButtonPress-1>', self.LeftClick)
+        self._rect.bind('<Button-2>', self.RightClick)
+        self._rect.bind('<Button-3>', self.RightClick)
+        self._rect.pack()
 
     def set_cart(self, cart):
-        self.cart = cart
+        self._cart = cart
 
-        foo = self.cart.MeterFeeder()
-        self.rect.itemconfigure(self._title, text=self.cart.title)
-        self.rect.itemconfigure(self._issuer, text=(self.cart.issuer + " " + self.cart.cart_id))
-        self.rect.itemconfigure(self._length, text=self.Parent.Meter.SecsFormat(foo[1]/1000))
-        self.rect['bg'] = COLOR_TYPES_NEW[self.cart.cart_type]
+        seconds = self._cart.MeterFeeder()[1] / 1000
+
+        self._rect.itemconfigure(self._title, text=self._cart.title)
+        self._rect.itemconfigure(self._issuer, text=(self._cart.issuer + " " + self._cart.cart_id))
+        self._rect.itemconfigure(self._length, text=self._parent._meter._get_fmt_time(seconds))
+        self._rect['bg'] = COLOR_TYPES_NEW[self._cart.cart_type]
 
     def remove_cart(self):
-        self.cart = None
-        self.rect.itemconfigure(self._title, text='')
-        self.rect.itemconfigure(self._issuer, text='---')
-        self.rect.itemconfigure(self._length, text='-:--')
-        self.rect['bg'] = COLOR_DEFAULT
+        self._cart = None
+        self._rect.itemconfigure(self._title, text='')
+        self._rect.itemconfigure(self._issuer, text='---')
+        self._rect.itemconfigure(self._length, text='-:--')
+        self._rect['bg'] = COLOR_DEFAULT
 
     def has_cart(self):
-        return self.cart is not None
+        return self._cart is not None
 
     def Reset(self):
-        self.Parent.Meter.reset()
+        self._parent._meter.reset()
 
-        self.rect['bg'] = COLOR_TYPES_PLAYED[self.cart.cart_type]
+        self._rect['bg'] = COLOR_TYPES_PLAYED[self._cart.cart_type]
 
-        self.Parent.SetActiveCart(None)
-        self.Parent.SetActiveGridObj(None)
+        self._parent.set_active_cart(None)
+        self._parent.set_active_grid_obj(None)
 
-        self.is_playing = False
+        self._is_playing = False
 
     def OnComplete(self):
         self.Reset()
-        if self.NextCoord is not None and self.Parent.Grid[self.NextCoord].has_cart():
-            self.Parent.Grid[self.NextCoord].LeftClick(None)
+        if self._next_key is not None and self._parent.Grid[self._next_key].has_cart():
+            self._parent.Grid[self._next_key].LeftClick(None)
 
     def LeftClick(self, clickEvent):
         ### click on a non-empty cart
-        if self.cart is not None:
+        if self._cart is not None:
 
             ### this cart is playing; stop and don't continue
-            if self.is_playing:
-                self.cart.stop()
-                if self.Parent.RewindOnPause:
-                    self.cart.seek_to_front()
+            if self._is_playing:
+                self._cart.stop()
                 self.Reset()
 
             ### this cart isn't playing, and neither is any other; start!
-            elif self.Parent.IsCartActive() is False:
-                self.is_playing = True
+            elif not self._parent.is_cart_active():
+                self._is_playing = True
 
-                self.Parent.SetActiveCart(self.cart)
-                self.Parent.SetActiveGridObj(self)
+                self._parent.set_active_cart(self._cart)
+                self._parent.set_active_grid_obj(self)
 
-                self.Parent.Meter.start()
-                self.cart.start(self.Reset) ##self.OnComplete
-                self.rect['bg'] = COLOR_PLAYING
-                database.log_cart(self.cart.cart_id)
-            pass
+                self._parent._meter.start()
+                self._cart.start(self.Reset) ##self.OnComplete
+                self._rect['bg'] = COLOR_PLAYING
+                database.log_cart(self._cart.cart_id)
+
         ### click on an empty cart; add the clipboarded cart
         # TODO: move to DJ Studio
         else:
             try:
-                self.set_cart(self.Parent.SelectedCart)
+                self.set_cart(self._parent._selected_cart)
             except AttributeError:
                 pass
 
         # TODO: move to DJ Studio
         try:
-            self.Parent.Entry.focus_set()
+            self._parent._entry.focus_set()
         except AttributeError:
             pass
 
     def RightClick(self, clickEvent):
-        if self.Parent.AllowRightClick and self.has_cart() and self.is_playing is False:
+        if self._enable_remove and self.has_cart() and not self._is_playing:
             self.remove_cart()
 
             # TODO: move to DJ Studio
             try:
-                self.Parent.Entry.focus_set()
+                self._parent._entry.focus_set()
             except AttributeError:
                 pass

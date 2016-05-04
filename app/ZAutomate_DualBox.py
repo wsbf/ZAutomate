@@ -2,7 +2,8 @@
 ### pure tcl: http://www.tcl.tk/man/tcl8.4/TkCmd/listbox.htm#M24
 ### fix dual highlight: http://www.internetcomputerforum.com/python-forum/311559-tkinter-selecting-one-item-each-two-listboxes.html
 
-from Tkinter import Frame, Scrollbar, Label, Listbox, END
+import Tkinter
+from Tkinter import Frame, Scrollbar, Label, Listbox
 
 class DualBox(Frame):
     Size = 0
@@ -11,7 +12,7 @@ class DualBox(Frame):
 
     def __init__(self, parent):
         Frame.__init__(self, bg='#33CCCC')
-        self.SelCallback = parent.SetClipboard
+        self.SelCallback = parent.select_cart
 
         # make scroll bar
         self.vsb = Scrollbar(self, orient="vertical", command=self.onvsb)
@@ -42,8 +43,8 @@ class DualBox(Frame):
     def TupleFill(self, tuplearr):
         self.Clear()
         for t in tuplearr:
-            self.lb1.insert(END, t[0])
-            self.lb2.insert(END, t[1])
+            self.lb1.insert(Tkinter.END, t[0])
+            self.lb2.insert(Tkinter.END, t[1])
         self.Size = len(tuplearr)
 
     def ProtoFill(self, length):
@@ -55,8 +56,8 @@ class DualBox(Frame):
         self.Size = length
 
     def Clear(self):
-        self.lb1.delete(0, END)
-        self.lb2.delete(0, END)
+        self.lb1.delete(0, Tkinter.END)
+        self.lb2.delete(0, Tkinter.END)
         self.Size = 0
 
     def select(self, *args):

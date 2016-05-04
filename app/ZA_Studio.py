@@ -2,7 +2,7 @@
 
 import thread
 import Tkinter
-from Tkinter import Tk, Frame, Label, BooleanVar, Radiobutton, Entry, Button
+from Tkinter import Frame, Label, BooleanVar, Checkbutton, Entry, Button
 from ZAutomate_GridObj import GridObj
 from ZAutomate_Meter import Meter
 import ZAutomate_DBInterface as database
@@ -12,148 +12,148 @@ METER_WIDTH = 1000
 GRID_ROWS = 5
 GRID_COLS = 6
 
+FONT_TITLE = ("Helvetica", 36, "bold italic")
+FONT = ("Helvetica", 14, "bold")
+
+TEXT_TITLE = "ZAutomate :: DJ Studio"
+TEXT_AUTOSLOT = "Auto-queue Tracks"
+TEXT_SEARCHBOX = "Search Box"
+TEXT_SEARCH = "Search"
+
 class Studio(Frame):
-    Master = None
-    Entry = None
-    DualBox = None
-    SearchCarts = None
-    SelectedCart = None
+    _meter = None
 
-    ActiveCart = None
-    ActiveGrid = None
-    AutoCartBool = None    ## tk BooleanVar
-    AllowRightClick = True
-    RewindOnPause = False
+    _rows = 0
+    _cols = 0
+    _grid = None
+    _active_cart = None
+    _active_grid_obj = None
 
-    Rows = 0
-    Cols = 0
-    Grid = None
+    _dual_box = None
+    _auto_cart = None
+    _entry = None
+    _search_results = None
+    _selected_cart = None
 
-    def __init__(self, parent):
+    def __init__(self):
         Frame.__init__(self)
-        self.Master = parent
-        self.Rows = GRID_ROWS
-        self.Cols = GRID_COLS
-        self.Grid = {}
+        self._rows = GRID_ROWS
+        self._cols = GRID_COLS
 
         # make the whole shebang resizable
-        top = self.Master.winfo_toplevel()
-        for row in range(2, self.Rows+2):
-            for col in range(0, self.Cols):
+        top = self.master.winfo_toplevel()
+        for row in range(2, self._rows + 2):
+            for col in range(0, self._cols):
                 top.rowconfigure(row, weight=1)
                 top.columnconfigure(col, weight=1)
                 self.rowconfigure(row, weight=1)
                 self.columnconfigure(col, weight=1)
 
-        title = Label(self.Master, fg='#000', font=('Helvetica', 36, 'bold italic'), text='ZAutomate :: DJ Studio')
-        title.grid(row=0, column=0, columnspan=self.Cols)
+        # initialize title
+        title = Label(self.master, fg='#000', font=FONT_TITLE, text=TEXT_TITLE)
+        title.grid(row=0, column=0, columnspan=self._cols)
 
-        self.Meter = Meter(self.Master, METER_WIDTH, self.MeterFeeder, None)
-        self.Meter.grid(row=1, column=0, columnspan=self.Cols) #, sticky=E+W
+        # initialize meter
+        self._meter = Meter(self.master, METER_WIDTH, self.MeterFeeder, None)
+        self._meter.grid(row=1, column=0, columnspan=self._cols)
 
-        self.DualBox = DualBox(self)
-        self.DualBox.grid(row=self.Rows + 2, column=0, columnspan=4)
+        # initialize cart grid
+        self._grid = {}
 
-        ### auto cart rotation controls
-        self.AutoCartBool = BooleanVar()
-        self.AutoCartBool.set(True)
-        control = Frame(self.Master, bd=2, relief=Tkinter.SUNKEN)
-        Label(control, font=('Helvetica', 14, 'bold'), fg='#000', text='Auto-Slot Rotation').pack(anchor=Tkinter.NW)
-        Radiobutton(control, text='Enabled', variable=self.AutoCartBool, value=True).pack(anchor=Tkinter.NW)
-        Radiobutton(control, text='Disabled', variable=self.AutoCartBool, value=False).pack(anchor=Tkinter.NW)
-        control.grid(row=self.Rows+2, column=4, columnspan=self.Cols-4)
+        for row in range(1, self._rows + 1):
+            for col in range(1, self._cols + 1):
+                key = (str)(row) + "x" + (str)(col)
 
-        Label(control, font=('Helvetica', 14, 'bold'), fg='#000', text='Search Box').pack(anchor=Tkinter.NW)
-        self.Entry = Entry(control, takefocus=True, width=45, bg='#000', fg='#33CCCC')
-        self.Entry.bind('<Return>', self.Search)
-        ##self.Entry.grid(row=self.Rows+3,column=0,columnspan=5)
-        self.Entry.pack(anchor=Tkinter.NW)
-        self.Entry.focus_set()
+                next_row = row
+                next_col = col
 
-        button = Button(control, text='Search', command=self.Search)
-        ##button.grid(row=self.Rows+3,column=5)
+                # each cell cues the cell below,
+                # bottom cells cue the top cell in the next column,
+                # the bottom right cell cues the top left cell
+                if next_row is self._rows:
+                    if next_col is self._cols:
+                        next_row = 1
+                        next_col = 1
+                    else:
+                        next_row = 1
+                        next_col += 1
+
+                next_key = (str)(next_row) + "x" + (str)(next_col)
+
+                self._grid[key] = GridObj(self, True, next_key)
+                self._grid[key].grid(row=row + 1, column=col - 1)
+
+        # initialize dual box
+        self._dual_box = DualBox(self)
+        self._dual_box.grid(row=self._rows + 2, column=0, columnspan=4)
+
+        # intialize auto-cart control
+        self._auto_cart = BooleanVar()
+        self._auto_cart.set(True)
+
+        control = Frame(self.master, bd=2, relief=Tkinter.SUNKEN)
+
+        Checkbutton(control, text=TEXT_AUTOSLOT, variable=self._auto_cart, onvalue=True, offvalue=False).pack(anchor=Tkinter.NW)
+        control.grid(row=self._rows + 2, column=4, columnspan=self._cols - 4)
+
+        # initialize search box, button
+        Label(control, font=FONT, fg='#000', text=TEXT_SEARCHBOX).pack(anchor=Tkinter.NW)
+        self._entry = Entry(control, takefocus=True, width=45, bg='#000', fg='#33CCCC')
+        self._entry.bind('<Return>', self.search)
+        # self._entry.grid(row=self._rows + 3, column=0, columnspan=5)
+        self._entry.pack(anchor=Tkinter.NW)
+        self._entry.focus_set()
+
+        button = Button(control, text=TEXT_SEARCH, command=self.search)
+        # button.grid(row=self._rows + 3, column=5)
         button.pack(anchor=Tkinter.S)
 
-        self.GenerateGrid()
-
-    def SetActiveGridObj(self, grid_obj):
-        self.ActiveGrid = grid_obj
-
-    def IsCartActive(self):
-        return self.ActiveCart is not None
-
-    def SetActiveCart(self, cart):
-        self.ActiveCart = cart
-
-    def GenerateGrid(self):
-        for row in range(1, self.Rows + 1):
-            for col in range(1, self.Cols + 1):
-                key = (str)(row) + "x" + (str)(col)
-                try:
-                    self.Grid[key].grid_forget()
-                    self.Grid[key].destroy()
-                    del self.Grid[key]
-                except KeyError:
-                    pass
-
-                ### default condition. set the auto-rotation next grid position
-                keynext = (str)(row+1)+"x"+(str)(col)
-                ### bottom right cues into top left
-                if row == self.Rows and col == self.Cols:
-                    keynext = (str)(1)+"x"+(str)(1)
-                 ### bottom of a column cues into top of the next
-                elif row == self.Rows:
-                    keynext = (str)(1)+"x"+(str)(col+1)
-
-
-                ## GridObj is by default unpaired with a Cart
-                self.Grid[key] = GridObj(self, keynext)
-                self.Grid[key].grid(row=row+1, column=col-1)
-
-    def SetClipboard(self, index):
-        # weird: index comes in as a str
-        if index is not None:
-            ##print "Setting cart index "+index+" to the clipboard"
-            self.SelectedCart = self.SearchCarts[int(index)]
-
-    # TODO: Meter never calls this function, so auto-slot rotation doesn't work
-    def EndCallback(self):
-        self.ActiveCart.stop()
-
-        if self.AutoCartBool.get() is True:
-            self.ActiveGrid.OnComplete()
-        else:
-            self.ActiveGrid.Reset()
-
-    def MeterFeeder(self):
-        if self.ActiveCart is not None:
-            return self.ActiveCart.MeterFeeder()
-        else:
-            return ("-:--", "-:--", "--", "--", None, None)
-
-    def Search(self, event=None):
-        thread.start_new_thread(self.SearchInternal, ())
-
-    def SearchInternal(self):
-        query = self.Entry.get()
+    def _search_internal(self):
+        query = self._entry.get()
 
         if len(query) >= 3:
-            self.SearchCarts = database.search_library(query)
+            self._search_results = database.search_library(query)
 
-            ## fill the DualBox with the search results
             arr = []
-            for cart in self.SearchCarts:
+            for cart in self._search_results:
                 temp = cart.MeterFeeder()
                 arr.append((temp[2], temp[3])) ## was 2,3    5
-            self.DualBox.TupleFill(arr)
+            self._dual_box.TupleFill(arr)
 
         thread.exit()
 
-    def Bail(self):
-        self.Master.destroy()
+    def search(self, event=None):
+        thread.start_new_thread(self._search_internal, ())
 
-root = Tk()
-studio = Studio(root)
-root.protocol("WM_DELETE_WINDOW", studio.Bail)
-root.title("ZAutomate :: DJ Studio")
-root.mainloop()
+    def is_cart_active(self):
+        return self._active_cart is not None
+
+    def set_active_cart(self, cart):
+        self._active_cart = cart
+
+    def set_active_grid_obj(self, grid_obj):
+        self._active_grid_obj = grid_obj
+
+    def select_cart(self, index):
+        # weird: index comes in as a str
+        if index is not None:
+            self._selected_cart = self._search_results[int(index)]
+
+    def MeterFeeder(self):
+        if self._active_cart is not None:
+            return self._active_cart.MeterFeeder()
+        else:
+            return ("-:--", "-:--", "--", "--", None, None)
+
+    # TODO: Meter never calls this function, so auto-slot rotation doesn't work
+    def EndCallback(self):
+        self._active_cart.stop()
+
+        if self._auto_cart.get() is True:
+            self._active_grid_obj.OnComplete()
+        else:
+            self._active_grid_obj.Reset()
+
+studio = Studio()
+studio.master.title(TEXT_TITLE)
+studio.master.mainloop()

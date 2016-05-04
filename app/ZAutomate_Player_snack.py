@@ -1,3 +1,4 @@
+import time
 from Tkinter import Tk
 import tkSnack
 

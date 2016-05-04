@@ -24,70 +24,57 @@ TEXT_TITLE = "ZAutomate :: Cart Machine"
 TEXT_RELOAD = "Reload"
 
 class CartMachine(Frame):
-    ###Master Window Variable
-    Master = None
-    ###Meter for counting down time left
-    Meter = None
+    _meter = None
 
-    ###Grid which holds the cart.
-    Grid = None
-    ###ActiveCart which is playing
-    ActiveCart = None
-    ###YATES_COMMENT: Not sure what this one is yet
-    ActiveGrid = None
-    ###Look to ensure we don't remove carts from the grid.  Included because
-    ###The gridder/gridObject classes are also used in the DJ Studio
-    AllowRightClick = False
-    RewindOnPause = True
+    _rows = GRID_ROWS
+    _cols = GRID_COLS
+    _grid = None
+    _active_cart = None
+    _active_grid_obj = None
 
-    ###Array which holds all the carts
-    Carts = None
-
-    def __init__(self): #width, height,
+    def __init__(self):
         Frame.__init__(self)
-        self.Cols = GRID_COLS
-        self.Rows = GRID_ROWS
 
         # make the window resizable
         top = self.winfo_toplevel()
-        for row in range(2, self.Rows+2):
-            for col in range(0, self.Cols):
+        for row in range(2, self._rows + 2):
+            for col in range(0, self._cols):
                 top.rowconfigure(row, weight=1)
                 top.columnconfigure(col, weight=1)
                 self.rowconfigure(row, weight=1)
                 self.columnconfigure(col, weight=1)
 
         # initialize the title
-        title = Label(self.Master, \
+        title = Label(self.master, \
             bg=COLOR_TITLE_BG, fg=COLOR_TITLE_FG, \
             font=FONT_TITLE, text=TEXT_TITLE)
-        title.grid(row=0, column=0, columnspan=self.Cols - 1, sticky=Tkinter.N)
+        title.grid(row=0, column=0, columnspan=self._cols - 1, sticky=Tkinter.N)
 
         # initialize the reload button
-        reload_button = Button(self.Master, \
+        reload_button = Button(self.master, \
             bg=COLOR_RELOAD_BG, fg=COLOR_RELOAD_FG, \
             font=FONT_RELOAD, text=TEXT_RELOAD, \
             command=self.reload)
-        reload_button.grid(row=0, column=self.Cols - 1)
+        reload_button.grid(row=0, column=self._cols - 1)
 
         # initialize the meter
-        self.Meter = Meter(self.Master, METER_WIDTH, self.MeterFeeder, None)
-        self.Meter.grid(row=1, column=0, columnspan=self.Cols) #, sticky=E+W
-        ##self.Meter.grid_propagate(0)
+        self._meter = Meter(self.master, METER_WIDTH, self.MeterFeeder, None)
+        self._meter.grid(row=1, column=0, columnspan=self._cols)
+        # self._meter.grid_propagate(0)
 
         # initialize the grid
-        self.Grid = {}
-        for row in range(1, self.Rows + 1):
-            for col in range(1, self.Cols + 1):
+        self._grid = {}
+        for row in range(1, self._rows + 1):
+            for col in range(1, self._cols + 1):
                 key = (str)(row) + "x" + (str)(col)
-                self.Grid[key] = GridObj(self)
-                self.Grid[key].grid(row=row + 1, column=col - 1)
+                self._grid[key] = GridObj(self, False)
+                self._grid[key].grid(row=row + 1, column=col - 1)
 
-        self.Gridder = Gridder(self.Rows, self.Cols)
+        self.Gridder = Gridder(self._rows, self._cols)
 
-        self.load()
+        self._load()
 
-    def load(self):
+    def _load(self):
         """Load the grid with carts.
 
         Since there are four cart types, each type is assigned
@@ -109,19 +96,19 @@ class CartMachine(Frame):
             },
             # Underwriting
             1: {
-                "corner": (self.Rows, self.Cols),
+                "corner": (self._rows, self._cols),
                 "limit": -1,
                 "shuffle": False
             },
             # Station ID
             2: {
-                "corner": (1, self.Cols),
+                "corner": (1, self._cols),
                 "limit": 9,
                 "shuffle": True
             },
             # Promotion
             3: {
-                "corner": (self.Rows, 1),
+                "corner": (self._rows, 1),
                 "limit": -1,
                 "shuffle": False
             }
@@ -156,7 +143,7 @@ class CartMachine(Frame):
         toinsert = 1
 
         ## keep iterating until the grid is full
-        while numinserted <= self.Rows * self.Cols:
+        while numinserted <= self._rows * self._cols:
             numempty = 0
             for t in carts:
                 for i in range(0, toinsert):
@@ -165,18 +152,18 @@ class CartMachine(Frame):
                     if len(carts[t]) > 0:
                         # pop the first unused coordinate from the progression
                         key = progs[t].pop(0)
-                        while self.Grid[key].has_cart():
+                        while self._grid[key].has_cart():
                             if len(progs[t]) > 0:
                                 key = progs[t].pop(0)
                             else:
                                 return
 
                         # add the cart to the grid
-                        self.Grid[key].set_cart(carts[t].pop(0))
+                        self._grid[key].set_cart(carts[t].pop(0))
                         numinserted += 1
 
                         ## extra control structure because we are 2 loops in
-                        if numinserted == self.Rows * self.Cols:
+                        if numinserted == self._rows * self._cols:
                             return
                     else:
                         numempty += 1
@@ -187,39 +174,36 @@ class CartMachine(Frame):
             toinsert += 2
 
     def reload(self):
-        if self.ActiveCart is not None:
+        if self._active_cart is not None:
             return
 
         print "Reloading the Cart Machine..."
-        for key in self.Grid.keys():
-            self.Grid[key].remove_cart()
+        for key in self._grid.keys():
+            self._grid[key].remove_cart()
 
-        self.load()
+        self._load()
         print "Cart Machine reloaded."
 
-    def EndCallback(self):
-        self.ActiveCart.stop()
-        self.ActiveGrid.Reset()
+    def is_cart_active(self):
+        return self._active_cart is not None
 
-    def SetActiveGridObj(self, grid_obj):
-        self.ActiveGrid = grid_obj
+    def set_active_cart(self, cart):
+        self._active_cart = cart
 
-    def SetActiveCart(self, cart):
-        self.ActiveCart = cart
-
-    def IsCartActive(self):
-        return self.ActiveCart is not None
+    def set_active_grid_obj(self, grid_obj):
+        self._active_grid_obj = grid_obj
 
     def MeterFeeder(self):
-        if self.ActiveCart is not None:
-            return self.ActiveCart.MeterFeeder()
+        if self._active_cart is not None:
+            return self._active_cart.MeterFeeder()
         else:
             return ("-:--", "-:--", "--", "--", None, None)
 
-    def Bail(self):
-        self.master.destroy()
+    # TODO: Meter never actually calls this function
+    def EndCallback(self):
+        self._active_cart.stop()
+        self._active_grid_obj.Reset()
 
 cart_machine = CartMachine()
-cart_machine.master.protocol("WM_DELETE_WINDOW", cart_machine.Bail)
-cart_machine.master.title("ZAutomate :: Cart Machine")
+cart_machine.master.title(TEXT_TITLE)
 cart_machine.mainloop()
