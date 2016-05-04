@@ -15,6 +15,7 @@ CART_MARGIN = 10
 METER_WIDTH = 1000
 
 class Test(Frame):
+    _meter = None
     _position = 0
     _length = 10
 
@@ -24,12 +25,12 @@ class Test(Frame):
         width = (CART_WIDTH + CART_MARGIN) * NUM_COLS
         width = METER_WIDTH
 
-        self.Meter = Meter(parent, width, self._get_meter_data, self._end_callback)
-        self.Meter.grid(row=0, column=0, columnspan=NUM_COLS) #, sticky=E+W
+        self._meter = Meter(parent, width, self._get_meter_data, self._end_callback)
+        self._meter.grid(row=0, column=0, columnspan=NUM_COLS) #, sticky=E+W
 
         Canvas(parent, width=900, height=100, bg='#00F').grid(row=2, column=0, columnspan=NUM_COLS)
 
-        self.Meter.start()
+        self._meter.start()
         thread.start_new_thread(self._run, ())
 
     def _run(self):
