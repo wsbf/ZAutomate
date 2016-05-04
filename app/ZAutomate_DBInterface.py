@@ -54,25 +54,25 @@ def save_show_id(showID):
     except IOError:
         print "Error: Could not save show ID to config file."
 
-def get_cart(cartType):
+def get_cart(cart_type):
     """Get a random cart of a given type."""
 
-    # temporary code to transform cartType to index
+    # temporary code to transform cart_type to index
     types = {
         0: "PSA",
         1: "Underwriting",
         2: "StationID"
     }
     for t in types:
-        if types[t] is cartType:
-            cartType = t
+        if types[t] is cart_type:
+            cart_type = t
 
     try:
         # attempt to find a valid cart
         count = 0
         while count < 5:
             # fetch a random cart
-            res = requests.get(URL_AUTOCART, params={"type": cartType})
+            res = requests.get(URL_AUTOCART, params={"type": cart_type})
             c = res.json()
 
             # return if cart type is empty
@@ -84,7 +84,7 @@ def get_cart(cartType):
             cart = Cart(c["cartID"], c["title"], c["issuer"], c["type"], filename)
 
             # verify cart filename
-            if cart.Verify():
+            if cart.is_playable():
                 return cart
             else:
                 count += 1
@@ -125,7 +125,7 @@ def get_next_playlist(showID):
 
             track = Cart(trackID, t["lb_track_name"], t["artist_name"], t["rotation"], filename)
 
-            if track.Verify():
+            if track.is_playable():
                 show["playlist"].append(track)
             else:
                 print time.asctime() + " :=: DBInterface :: Get_Next_Playlist() :: cart file \"" + filename + "\" does not exist"
@@ -155,7 +155,7 @@ def get_carts():
                 cart = Cart(c["cartID"], c["title"], c["issuer"], c["type"], filename)
 
                 # verify that this file exists
-                if cart.Verify():
+                if cart.is_playable():
                     carts[t].append(cart)
 
     except requests.exceptions.ConnectionError:
@@ -178,7 +178,7 @@ def search_library(query):
             filename = LIBRARY_PREFIX + "carts/" + c["filename"]
 
             cart = Cart(c["cartID"], c["title"], c["issuer"], c["type"], filename)
-            if cart.Verify():
+            if cart.is_playable():
                 results.append(cart)
 
         for t in results_res["tracks"]:
@@ -186,7 +186,7 @@ def search_library(query):
             trackID = t["album_code"] + "-" + t["track_num"]
 
             track = Cart(trackID, t["track_name"], t["artist_name"], t["rotation"], filename)
-            if track.Verify():
+            if track.is_playable():
                 results.append(track)
     except requests.exceptions.ConnectionError:
         print "Error: Could not fetch search results."

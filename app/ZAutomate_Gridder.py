@@ -1,5 +1,5 @@
 ## This is a helper class that is used by _Carts
-class Gridder():
+class Gridder(object):
 
     def __init__(self, maxRow, maxCol):
         self.maxR = maxRow

@@ -1,37 +1,34 @@
 import time
-import mad
 from ZAutomate_Player_madao import Player
 
-class Cart():
+class Cart(object):
     Index = None
-    ID = None
-    Title = None
-    Issuer = None
-    cartType = None
-    Filename = None
 
-    Sound = None
+    cart_id = None
+    title = None
+    issuer = None
+    cart_type = None
+    filename = None
+
+    player = None
     TimeStart = None    # only used for queueing via ZA_Automation
 
-    def __init__(self, cid, title, issuer, ctype, filename):
+    def __init__(self, cart_id, title, issuer, cart_type, filename):
         # TODO: mock ZAutoLib in development
         filename = "test/test.mp3"
 
-        self.Filename = filename.strip()
-        tempFile = None
-        try:
-            tempFile = mad.MadFile(filename)
-        except IOError:
-            print time.asctime() + " :=: Cart :: __init__ :: Error :: Mad.Madfile(" + (str)(filename) +") failed!"
-        if tempFile is not None:
-            self.Sound = Player(tempFile, filename)
-        else:
-            self.Sound = None
-        self.ID = cid
-        self.Title = title.strip()
-        self.Issuer = issuer.strip()
-        self.cartType = ctype.strip()
+        self.cart_id = cart_id
+        self.title = title
+        self.issuer = issuer
+        self.cart_type = cart_type
+        self.filename = filename
 
+        try:
+            self.player = Player(filename)
+        except IOError:
+            print time.asctime() + " :=: Cart :: could not load audio file " + filename
+
+    # TODO: move start time code to CartQueue
     def SetStartTime(self, startTime):
         self.TimeStart = startTime
 
@@ -44,39 +41,29 @@ class Cart():
         else:
             return '00:00:00'
 
-    def Verify(self):
-        #return os.path.isfile(self.Filename)
-        return self.Sound is not None
-
-    def __del__(self):
-        ###self.Sound.destroy()
-        ##print self.Title
-        pass
+    def is_playable(self):
+        return self.player is not None
 
     def MeterFeeder(self):
-        return (self.Sound.time_elapsed(), self.Sound.length(), self.Title, self.Issuer, self.ID, self.cartType)
+        return (self.player.time_elapsed(), self.player.length(), self.title, self.issuer, self.cart_id, self.cart_type)
 
-    def Start(self, callback=None):
-        print time.asctime() + " :=: Cart :: Start :: " + self.Title + " :: " + self.Issuer
-        try:
-            self.Sound.play(callback)
-        except:
-            print time.asctime() + " :=: Cart :: Start :: ERROR :: could not play the file " + self.Filename
-            return
+    def start(self, callback=None):
+        print time.asctime() + " :=: Cart :: Start :: " + self.title + " - " + self.issuer
+        self.player.play(callback)
 
-    def Stop(self):
-        print time.asctime() + " :=: Cart :: Stop :: " + self.Issuer + " - " + self.Title
-        self.Sound.stop()
+    def stop(self):
+        print time.asctime() + " :=: Cart :: Stop :: " + self.issuer + " - " + self.title
+        self.player.stop()
 
-    def IsPlaying(self):
-        return self.Sound.isplaying()
+    def is_playing(self):
+        return self.player.isplaying()
 
     def DefaultEnd(self):
         pass
 
     ###YATES_METHOD
     def PrintCart(self):
-        return (str)(self.ID) + " - " + (str)(self.Issuer) + " - " + (str)(self.Title)
+        return (str)(self.cart_id) + " - " + (str)(self.issuer) + " - " + (str)(self.title)
 
     def SeekToFront(self):
-        self.Sound.SeekToFront()
+        self.player.SeekToFront()

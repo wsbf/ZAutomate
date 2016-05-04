@@ -6,7 +6,7 @@ import time
 
 import mad
 
-class Player():
+class Player(object):
     Path = None
     Length = 0            ## always in milliseconds!
 

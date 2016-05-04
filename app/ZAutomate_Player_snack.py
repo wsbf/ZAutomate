@@ -5,7 +5,7 @@ import tkSnack
 
 DEBUG_MUTE = False
 
-class Player():
+class Player(object):
     Path = None
     Length = 0        ## milliseconds
     Elapsed = 0

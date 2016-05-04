@@ -44,7 +44,7 @@ AUTOMATION_CARTS = [
 
 PLAYLIST_MIN_LENGTH = 10
 
-class CartQueue():
+class CartQueue(object):
 
     ### current show ID
     ShowID = -1
@@ -88,7 +88,7 @@ class CartQueue():
         return self.Arr
 
     def IsPlaying(self):
-        return self.Arr[0].IsPlaying()
+        return self.Arr[0].is_playing()
 
     def IsStopping(self):
         return not self.KeepGoing
@@ -98,7 +98,7 @@ class CartQueue():
             print time.asctime() + " :=: CQ :: Dequeue :: Dequeuing " + self.Arr[0].PrintCart()
 
             # stop the cart
-            self.Arr[0].Stop()
+            self.Arr[0].stop()
             self.Meter.Reset()
 
             # move the cart to the played list
@@ -158,7 +158,7 @@ class CartQueue():
             self.Refill()
 
         # add carts if there aren't any carts in the queue
-        carts = [c for c in self.Arr if c.cartType in CART_TYPES]
+        carts = [c for c in self.Arr if c.cart_type in CART_TYPES]
 
         if len(carts) is 0:
             print time.asctime() + " :=: CQ :: Transition :: Refilling carts"
@@ -181,15 +181,15 @@ class CartQueue():
     ## to ensure that carts are played at correct times.
     def RemoveCarts(self):
         # TODO: this line is sufficient if current track is separated from queue
-        # self.Arr = [c for c in self.Arr if cart.cartType not in CART_TYPES]
+        # self.Arr = [c for c in self.Arr if cart.cart_type not in CART_TYPES]
 
-        if self.Arr[0].IsPlaying():
+        if self.Arr[0].is_playing():
             i = 1
         else:
             i = 0
 
         while i < len(self.Arr):
-            if self.Arr[i].cartType in CART_TYPES:
+            if self.Arr[i].cart_type in CART_TYPES:
                 self.Arr.pop(i)
             else:
                 i += 1
@@ -284,8 +284,8 @@ class CartQueue():
 
         print time.asctime() + " :=: starting " + self.Arr[0].PrintCart()
         self.Meter.Start()
-        self.Arr[0].Start(self.Transition)
-        database.log_cart(self.Arr[0].ID)
+        self.Arr[0].start(self.Transition)
+        database.log_cart(self.Arr[0].cart_id)
 
         self.UIUpdate()
 

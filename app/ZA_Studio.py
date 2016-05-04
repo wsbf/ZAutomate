@@ -118,11 +118,11 @@ class Studio(Frame):
 
     # TODO: Meter never calls this function, so auto-slot rotation doesn't work
     def EndCallback(self):
+        self.ActiveCart.stop()
+
         if self.AutoCartBool.get() is True:
-            self.ActiveCart.Stop()
             self.ActiveGrid.OnComplete()
         else:
-            self.ActiveCart.Stop()
             self.ActiveGrid.Reset()
 
     def MeterFeeder(self):

@@ -5,7 +5,7 @@ import mad
 
 AODEV = ao.AudioDevice(0)    ## GLOBAL
 
-class Player():
+class Player(object):
     Path = None
     Length = 0        ## milliseconds
     Elapsed = 0       ## always in milliseconds!
@@ -15,10 +15,10 @@ class Player():
     KeepGoing = False # may need a lock since stop and play_internal both write
     Devrsc = None
 
-    def __init__(self, mad_file, filename):
-        self.Madrsc = mad_file
-        self.Length = self.Madrsc.total_time()
+    def __init__(self, filename):
         self.FileName = filename
+        self.Madrsc = mad.MadFile(filename)
+        self.Length = self.Madrsc.total_time()
 
     def length(self):
         return self.Length

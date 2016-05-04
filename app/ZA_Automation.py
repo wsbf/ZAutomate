@@ -11,7 +11,7 @@ OFFSET_Y = 0
 WINDOW_PARAMS = (str)(SIZE_X) + "x" + (str)(SIZE_Y) \
         + "+" + (str)(OFFSET_X) + "+" + (str)(OFFSET_Y)
 
-class Automation():
+class Automation(object):
     STATE_STOPPED = 1
     STATE_PLAYING = 2
     STATE_STOPPING = 3
@@ -117,7 +117,7 @@ class Automation():
         self.ArtistBox.delete(0, Tkinter.END)
 
         ###YATES_COMMENT: Appends the CueTime, TrackName, ArtistName to each of the Boxes.
-        items = [(c.GetFmtStartTime(), c.Title, c.Issuer) for c in self.CartQueue.GetQueue()]
+        items = [(c.GetFmtStartTime(), c.title, c.issuer) for c in self.CartQueue.GetQueue()]
 
         for item in items:
             self.CueBox.insert(Tkinter.END, item[0])

@@ -166,14 +166,14 @@ class CartMachine(Frame):
                     if len(carts[t]) > 0:
                         # pop the first unused coordinate from the progression
                         key = progs[t].pop(0)
-                        while self.Grid[key].HasCart():
+                        while self.Grid[key].has_cart():
                             if len(progs[t]) > 0:
                                 key = progs[t].pop(0)
                             else:
                                 return
 
                         # add the cart to the grid
-                        self.Grid[key].AddCart(carts[t].pop(0))
+                        self.Grid[key].set_cart(carts[t].pop(0))
                         numinserted += 1
 
                         ## extra control structure because we are 2 loops in
@@ -193,13 +193,13 @@ class CartMachine(Frame):
 
         print "Reloading the Cart Machine..."
         for key in self.Grid.keys():
-            self.Grid[key].RemCart()
+            self.Grid[key].remove_cart()
 
         self.load()
         print "Cart Machine reloaded."
 
     def EndCallback(self):
-        self.ActiveCart.Stop()
+        self.ActiveCart.stop()
         self.ActiveGrid.Reset()
 
     def SetActiveGridObj(self, grid_obj):

@@ -68,10 +68,10 @@ class GridObj(Frame):
         self.cart = cart
 
         foo = self.cart.MeterFeeder()
-        self.rect.itemconfigure(self._title, text=self.cart.Title)
-        self.rect.itemconfigure(self._issuer, text=(self.cart.Issuer + " " + self.cart.ID))
+        self.rect.itemconfigure(self._title, text=self.cart.title)
+        self.rect.itemconfigure(self._issuer, text=(self.cart.issuer + " " + self.cart.cart_id))
         self.rect.itemconfigure(self._length, text=self.Parent.Meter.SecsFormat(foo[1]/1000))
-        self.rect['bg'] = COLOR_TYPES_NEW[self.cart.cartType]
+        self.rect['bg'] = COLOR_TYPES_NEW[self.cart.cart_type]
 
     def remove_cart(self):
         self.cart = None
@@ -86,7 +86,7 @@ class GridObj(Frame):
     def Reset(self):
         self.Parent.Meter.Reset()
 
-        self.rect['bg'] = COLOR_TYPES_PLAYED[self.cart.cartType]
+        self.rect['bg'] = COLOR_TYPES_PLAYED[self.cart.cart_type]
 
         self.Parent.SetActiveCart(None)
         self.Parent.SetActiveGridObj(None)
@@ -104,7 +104,7 @@ class GridObj(Frame):
 
             ### this cart is playing; stop and don't continue
             if self.is_playing:
-                self.cart.Stop()
+                self.cart.stop()
                 if self.Parent.RewindOnPause:
                     self.cart.SeekToFront()
                 self.Reset()
@@ -117,9 +117,9 @@ class GridObj(Frame):
                 self.Parent.SetActiveGridObj(self)
 
                 self.Parent.Meter.Start()
-                self.cart.Start(self.Reset) ##self.OnComplete
+                self.cart.start(self.Reset) ##self.OnComplete
                 self.rect['bg'] = COLOR_PLAYING
-                database.log_cart(self.cart.ID)
+                database.log_cart(self.cart.cart_id)
             pass
         ### click on an empty cart; add the clipboarded cart
         # TODO: move to DJ Studio
