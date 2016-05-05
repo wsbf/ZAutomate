@@ -112,13 +112,12 @@ class Studio(Frame):
         query = self._entry.get()
 
         if len(query) >= 3:
-            self._search_results = database.search_library(query)
+            print "Searching library with query \"%s\"..." % query
 
-            arr = []
-            for cart in self._search_results:
-                data = cart._get_meter_data()
-                arr.append((data[2], data[3]))
-            self._dual_box.TupleFill(arr)
+            self._search_results = database.search_library(query)
+            self._dual_box.fill(self._search_results)
+
+            print "Found %d results." % len(self._search_results)
 
         thread.exit()
 
@@ -135,9 +134,8 @@ class Studio(Frame):
         self._active_grid_obj = grid_obj
 
     def select_cart(self, index):
-        # weird: index comes in as a str
         if index is not None:
-            self._selected_cart = self._search_results[int(index)]
+            self._selected_cart = self._search_results[index]
 
     def _get_meter_data(self):
         if self._active_cart is not None:
