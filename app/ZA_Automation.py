@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import time
 import Tkinter
 from Tkinter import Label, StringVar, Button, Frame, Scrollbar, Listbox
 from ZAutomate_CartQueue import CartQueue
@@ -92,7 +93,7 @@ class Automation(Frame):
 
     def start(self):
         print "Starting Automation..."
-        self._cart_queue.start(True)
+        self._cart_queue.start()
         self._state = self.STATE_PLAYING
         self._button_text.set(TEXT_BUTTON_PLAYING)
         self._button.config(bg=COLOR_BUTTON_PLAYING, highlightbackground=COLOR_BUTTON_PLAYING)
@@ -111,6 +112,12 @@ class Automation(Frame):
         self._button_text.set(TEXT_BUTTON_STOPPED)
         self._button.config(bg=COLOR_BUTTON_STOPPED, highlightbackground=COLOR_BUTTON_STOPPED)
 
+    def _get_fmt_start_time(self, start_time):
+        if start_time is not None:
+            return time.strftime("%I:%M:%S %p", start_time)
+        else:
+            return "00:00:00"
+
     # callback: when anything happens in _cart_queue, run this to update the UI's state
     def _update_ui(self):
         # clear and reset the playlist
@@ -119,7 +126,7 @@ class Automation(Frame):
         self._list_artist.delete(0, Tkinter.END)
 
         for cart in self._cart_queue.get_queue():
-            self._list_time.insert(Tkinter.END, cart.GetFmtStartTime())
+            self._list_time.insert(Tkinter.END, self._get_fmt_start_time(cart.start_time))
             self._list_track.insert(Tkinter.END, cart.title)
             self._list_artist.insert(Tkinter.END, cart.issuer)
 

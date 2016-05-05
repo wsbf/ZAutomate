@@ -13,20 +13,20 @@ URL_AUTOCART = "https://dev.wsbf.net/api/zautomate/automation_add_carts.php"
 URL_STUDIOSEARCH = "https://dev.wsbf.net/api/zautomate/studio_search.php"
 URL_LOG = "https://dev.wsbf.net/api/zautomate/zautomate_log.php"
 
-### sid.conf stores the previous/current showID
+### sid.conf stores the previous/current show ID
 FILE_AUTOCONF = "sid.conf"
 
 ### enable logging
 LOGGING = True
 
-def get_new_show_id(showID):
+def get_new_show_id(show_id):
     """Get a new show ID for queueing playlists.
 
-    :param showID: previous show ID, which will be excluded
+    :param show_id: previous show ID, which will be excluded
     """
 
     try:
-        res = requests.get(URL_AUTOSTART, params={"showid": showID})
+        res = requests.get(URL_AUTOSTART, params={"showid": show_id})
         return res.json()
     except requests.exceptions.ConnectionError:
         print "Error: Could not fetch starting show ID."
@@ -37,19 +37,19 @@ def restore_show_id():
 
     if os.access(FILE_AUTOCONF, os.R_OK) is True:
         f = open(FILE_AUTOCONF, "r")
-        showID = f.read()
+        show_id = f.read()
 
-        if showID.isdigit():
-            return (int)(showID)
+        if show_id.isdigit():
+            return (int)(show_id)
 
     return -1
 
-def save_show_id(showID):
+def save_show_id(show_id):
     """Save a show ID to the config file."""
 
     try:
         f = open(FILE_AUTOCONF, "w")
-        f.write((str)(showID + 1))
+        f.write((str)(show_id + 1))
         f.close()
     except IOError:
         print "Error: Could not save show ID to config file."
@@ -93,7 +93,7 @@ def get_cart(cart_type):
 
     return None
 
-def get_next_playlist(showID):
+def get_next_playlist(show_id):
     """Get the playlist from a past show.
 
     Currently the previous show ID is just incremented,
@@ -101,11 +101,11 @@ def get_next_playlist(showID):
     so this function is usually called several times until
     enough tracks are retrieved.
 
-    :param showID: previous show ID
+    :param show_id: previous show ID
     """
 
     # get next show ID
-    showID += 1
+    show_id += 1
 
     # get next playlist
     show = {
@@ -113,7 +113,7 @@ def get_next_playlist(showID):
         "playlist": []
     }
     try:
-        res = requests.get(URL_AUTOLOAD, params={"showid": showID})
+        res = requests.get(URL_AUTOLOAD, params={"showid": show_id})
         show_res = res.json()
 
         show["showID"] = show_res["showID"]
@@ -121,14 +121,12 @@ def get_next_playlist(showID):
         for t in show_res["playlist"]:
             # TODO: move pathname building to Track constructor
             filename = LIBRARY_PREFIX + t["file_name"]
-            trackID = t["lb_album_code"] + "-" + t["lb_track_num"]
+            track_id = t["lb_album_code"] + "-" + t["lb_track_num"]
 
-            track = Cart(trackID, t["lb_track_name"], t["artist_name"], t["rotation"], filename)
+            track = Cart(track_id, t["lb_track_name"], t["artist_name"], t["rotation"], filename)
 
             if track.is_playable():
                 show["playlist"].append(track)
-            else:
-                print time.asctime() + " :=: DBInterface :: Get_Next_Playlist() :: cart file \"" + filename + "\" does not exist"
     except requests.exceptions.ConnectionError:
         print "Error: Could not fetch playlist."
 
@@ -183,9 +181,9 @@ def search_library(query):
 
         for t in results_res["tracks"]:
             filename = LIBRARY_PREFIX + t["file_name"]
-            trackID = t["album_code"] + "-" + t["track_num"]
+            track_id = t["album_code"] + "-" + t["track_num"]
 
-            track = Cart(trackID, t["track_name"], t["artist_name"], t["rotation"], filename)
+            track = Cart(track_id, t["track_name"], t["artist_name"], t["rotation"], filename)
             if track.is_playable():
                 results.append(track)
     except requests.exceptions.ConnectionError:
@@ -193,17 +191,17 @@ def search_library(query):
 
     return results
 
-def log_cart(cartID):
+def log_cart(cart_id):
     """Log a cart or track.
 
-    :param cartID: cart ID, or [album_code]-[track_num] for a track
+    :param cart_id: cart ID, or [album_code]-[track_num] for a track
     """
 
     if LOGGING is False:
         return
 
     try:
-        res = requests.post(URL_LOG, params={"cartid": cartID})
+        res = requests.post(URL_LOG, params={"cartid": cart_id})
         print res.text
     except requests.exceptions.ConnectionError:
         print time.asctime() + " :=: Caught error: Could not access cart logger."

@@ -71,7 +71,7 @@ class GridObj(Frame):
     def set_cart(self, cart):
         self._cart = cart
 
-        seconds = self._cart.MeterFeeder()[1] / 1000
+        seconds = self._cart._get_meter_data()[1] / 1000
 
         self._rect.itemconfigure(self._title, text=self._cart.title)
         self._rect.itemconfigure(self._issuer, text=(self._cart.issuer + " " + self._cart.cart_id))

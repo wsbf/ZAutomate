@@ -17,29 +17,29 @@ CART_TYPES = [
 ### - 2 PSAs each hour
 ### - 1 Underwriting each hour
 ###
-### types        array of cart types to play
-### minuteBreak  target play time within each hour
-### maxOffset    maximum deviation from minuteBreak, in seconds
+### types      array of cart types to play
+### minute     target play time within each hour
+### max_delta  maximum deviation from minute, in seconds
 AUTOMATION_CARTS = [
     {
         "types": ["StationID"],
-        "minuteBreak": 1,  # TODO: should this be 0?
-        "maxOffset": 300
+        "minute": 1,  # TODO: should this be 0?
+        "max_delta": 300
     },
     {
         "types": ["StationID", "PSA"],
-        "minuteBreak": 15,
-        "maxOffset": 300
+        "minute": 15,
+        "max_delta": 300
     },
     {
         "types": ["StationID", "Underwriting"],
-        "minuteBreak": 30,
-        "maxOffset": 300
+        "minute": 30,
+        "max_delta": 300
     },
     {
         "types": ["StationID", "PSA"],
-        "minuteBreak": 45,
-        "maxOffset": 300
+        "minute": 45,
+        "max_delta": 300
     }
 ]
 
@@ -68,7 +68,7 @@ class CartQueue(object):
         self._update_callback = update_callback
 
         # initialize the meter
-        self._meter = Meter(master, METER_WIDTH, self.MeterFeeder, None)
+        self._meter = Meter(master, METER_WIDTH, self._get_meter_data, None)
         self._meter.grid(row=1, column=0, columnspan=4)
 
     def get_queue(self):
@@ -76,6 +76,12 @@ class CartQueue(object):
 
     def save(self):
         database.save_show_id(self._show_id)
+
+    def _enqueue(self):
+        print time.asctime() + " :=: CartQueue :: Enqueuing " + self._queue[0].cart_id
+        self._meter.start()
+        self._queue[0].start(self.transition)
+        database.log_cart(self._queue[0].cart_id)
 
     def _dequeue(self):
         if len(self._queue) > 0:
@@ -101,23 +107,23 @@ class CartQueue(object):
     ## Generate start times for each item in the Queue
     ## This function is called when items are added to the queue and
     ## when the queue is started after a stop
-    def _gen_start_times(self, beginIndex=0):
-        baseTime = time.localtime()
+    def _gen_start_times(self, begin_index=0):
+        base_time = time.localtime()
 
-        for i in range(beginIndex, len(self._queue)):
+        for i in range(begin_index, len(self._queue)):
             ## for each cart after the first, add the length of the previous
             ## track to produce the start time
             if i > 0:
-                prevStartTime = self._queue[i - 1].GetStartTime()
-                prevLength = self._queue[i - 1].MeterFeeder()[1] / 1000
-                startTime = time.mktime(prevStartTime) + prevLength
-                baseTime = time.localtime(startTime)
+                prev_start_time = self._queue[i - 1].start_time
+                prev_length = self._queue[i - 1]._get_meter_data()[1] / 1000
+                start_time = time.mktime(prev_start_time) + prev_length
+                base_time = time.localtime(start_time)
 
             ## set the current cart's starting time
-            self._queue[i].SetStartTime(baseTime)
+            self._queue[i].start_time = base_time
 
     def add_tracks(self):
-        beginIndex = len(self._queue)
+        begin_index = len(self._queue)
 
         while len(self._queue) < PLAYLIST_MIN_LENGTH:
             # retrieve playlist from database
@@ -129,23 +135,23 @@ class CartQueue(object):
 
             print time.asctime() + " :=: CartQueue :: Added tracks, length is " + (str)(len(self._queue))
 
-        self._gen_start_times(beginIndex)
+        self._gen_start_times(begin_index)
 
     ## Insert carts into the queue.
     ## This function is called when the queue is started and when the queue
     ## runs out of carts.
-    def insert_carts(self):
+    def _insert_carts(self):
         for entry in AUTOMATION_CARTS:
-            self.insert_cart(entry["types"], entry["minuteBreak"], entry["maxOffset"])
+            self._insert_cart(entry["types"], entry["minute"], entry["max_delta"])
 
     ## Insert carts into the current hour according to a config entry.
     ## This function inserts carts as close as possible to the target start time,
     ## even if the target window is not met.
-    def insert_cart(self, types, minuteBreak, maxOffset):
-        target = datetime.datetime.now().replace(minute=minuteBreak, second=0, microsecond=0)
+    def _insert_cart(self, types, minute, max_delta):
+        target = datetime.datetime.now().replace(minute=minute, second=0, microsecond=0)
 
         ## don't insert if the window has already passed this hour
-        if target + datetime.timedelta(seconds=maxOffset) < datetime.datetime.now():
+        if target + datetime.timedelta(seconds=max_delta) < datetime.datetime.now():
             return
 
         print time.asctime() + " :=: CartQueue :: Target insert time is " + (str)(target)
@@ -157,10 +163,10 @@ class CartQueue(object):
         ## TODO: the head of the queue is ignored for multi-threading safety
         ##       however, it might be more prudent to use a lock
         for i in range(1, len(self._queue)):
-            startTime = self._queue[i].GetStartTime()
-            startTime = datetime.datetime.fromtimestamp(time.mktime(startTime))
+            start_time = self._queue[i].start_time
+            start_time = datetime.datetime.fromtimestamp(time.mktime(start_time))
 
-            delta = abs(target - startTime)
+            delta = abs(target - start_time)
 
             if min_delta is -1 or delta < min_delta:
                 min_index = i
@@ -171,10 +177,10 @@ class CartQueue(object):
         print time.asctime() + " :=: CartQueue :: min_index is " + (str)(min_index)
         print time.asctime() + " :=: CartQueue :: min_delta is " + (str)(min_delta)
 
-        if min_delta.seconds <= maxOffset:
-            print time.asctime() + " :=: CartQueue :: Carts were inserted within target window"
+        if min_delta.seconds <= max_delta:
+            print time.asctime() + " :=: CartQueue :: Carts inserted within target window"
         else:
-            print time.asctime() + " :=: CartQueue :: Could not insert carts within target window"
+            print time.asctime() + " :=: CartQueue :: Carts not inserted within target window"
 
         ## insert a cart of each type into the queue
         index = min_index
@@ -188,7 +194,7 @@ class CartQueue(object):
     ## This function is called after a hard stop and before new carts
     ## are inserted. The queue must be cleared at these times in order
     ## to ensure that carts are played at correct times.
-    def remove_carts(self):
+    def _remove_carts(self):
         # TODO: this line is sufficient if current track is separated from queue
         # self._queue = [c for c in self._queue if cart.cart_type not in CART_TYPES]
 
@@ -203,20 +209,13 @@ class CartQueue(object):
             else:
                 i += 1
 
-    # TODO: _enqueue method
     ### Start the front track in the queue.
     ### This function is called when Automation is started and after a track ends.
-    def start(self, click=False):
+    def start(self):
         self._is_playing = True
-
-        if click is True:
-            self._gen_start_times()
-            self.insert_carts()
-
-        print time.asctime() + " :=: CartQueue :: Enqueuing " + self._queue[0].cart_id
-        self._meter.start()
-        self._queue[0].start(self.transition)
-        database.log_cart(self._queue[0].cart_id)
+        self._gen_start_times()
+        self._insert_carts()
+        self._enqueue()
 
         self._update_callback()
 
@@ -234,28 +233,29 @@ class CartQueue(object):
             print time.asctime() + " :=: CartQueue :: Refilling the playlist"
             self.add_tracks()
             self._queue_played = []
-            self.remove_carts()
-            self.insert_carts()
+            self._remove_carts()
+            self._insert_carts()
 
         # add carts if there aren't any carts in the queue
         carts = [c for c in self._queue if c.cart_type in CART_TYPES]
 
         if len(carts) is 0:
             print time.asctime() + " :=: CartQueue :: Refilling carts"
-            self.insert_carts()
+            self._insert_carts()
 
         if self._is_playing is True:
             # start the next track if the current track ended
-            self.start()
+            self._enqueue()
         else:
             # remove all carts if the queue was stopped
             print time.asctime() + " :=: CartQueue :: Removing all carts"
-            self.remove_carts()
-            self._update_callback()
+            self._remove_carts()
+
+        self._update_callback()
 
     ## passed to Meter on instantiation
-    def MeterFeeder(self):
+    def _get_meter_data(self):
         if len(self._queue) > 0:
-            return self._queue[0].MeterFeeder()
+            return self._queue[0]._get_meter_data()
         else:
             return ("-:--", "-:--", "", "", "", "")

@@ -58,7 +58,7 @@ class CartMachine(Frame):
         reload_button.grid(row=0, column=self._cols - 1)
 
         # initialize the meter
-        self._meter = Meter(self.master, METER_WIDTH, self.MeterFeeder, None)
+        self._meter = Meter(self.master, METER_WIDTH, self._get_meter_data, None)
         self._meter.grid(row=1, column=0, columnspan=self._cols)
         # self._meter.grid_propagate(0)
 
@@ -193,9 +193,9 @@ class CartMachine(Frame):
     def set_active_grid_obj(self, grid_obj):
         self._active_grid_obj = grid_obj
 
-    def MeterFeeder(self):
+    def _get_meter_data(self):
         if self._active_cart is not None:
-            return self._active_cart.MeterFeeder()
+            return self._active_cart._get_meter_data()
         else:
             return ("-:--", "-:--", "--", "--", None, None)
 

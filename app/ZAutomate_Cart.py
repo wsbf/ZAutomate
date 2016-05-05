@@ -9,8 +9,6 @@ class Cart(object):
 
     _player = None
 
-    TimeStart = None    # only used for queueing via ZA_Automation
-
     def __init__(self, cart_id, title, issuer, cart_type, filename):
         # TODO: mock ZAutoLib in development
         filename = "test/test.mp3"
@@ -42,18 +40,5 @@ class Cart(object):
         print time.asctime() + " :=: Cart :: Stop :: " + self.issuer + " - " + self.title
         self._player.stop()
 
-    def MeterFeeder(self):
+    def _get_meter_data(self):
         return (self._player.time_elapsed(), self._player.length(), self.title, self.issuer, self.cart_id, self.cart_type)
-
-    # TODO: move start time code to CartQueue
-    def SetStartTime(self, startTime):
-        self.TimeStart = startTime
-
-    def GetStartTime(self):
-        return self.TimeStart
-
-    def GetFmtStartTime(self):
-        if self.TimeStart is not None:
-            return time.strftime('%I:%M:%S %p', self.TimeStart)
-        else:
-            return '00:00:00'

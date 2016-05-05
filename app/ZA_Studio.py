@@ -54,7 +54,7 @@ class Studio(Frame):
         title.grid(row=0, column=0, columnspan=self._cols)
 
         # initialize meter
-        self._meter = Meter(self.master, METER_WIDTH, self.MeterFeeder, None)
+        self._meter = Meter(self.master, METER_WIDTH, self._get_meter_data, None)
         self._meter.grid(row=1, column=0, columnspan=self._cols)
 
         # initialize cart grid
@@ -116,8 +116,8 @@ class Studio(Frame):
 
             arr = []
             for cart in self._search_results:
-                temp = cart.MeterFeeder()
-                arr.append((temp[2], temp[3])) ## was 2,3    5
+                data = cart._get_meter_data()
+                arr.append((data[2], data[3]))
             self._dual_box.TupleFill(arr)
 
         thread.exit()
@@ -139,9 +139,9 @@ class Studio(Frame):
         if index is not None:
             self._selected_cart = self._search_results[int(index)]
 
-    def MeterFeeder(self):
+    def _get_meter_data(self):
         if self._active_cart is not None:
-            return self._active_cart.MeterFeeder()
+            return self._active_cart._get_meter_data()
         else:
             return ("-:--", "-:--", "--", "--", None, None)
 
