@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+"""The Automation module provides a GUI for radio automation."""
 import time
 import Tkinter
 from Tkinter import Label, StringVar, Button, Frame, Scrollbar, Listbox
@@ -20,7 +21,18 @@ TEXT_PLAYLIST_TIME = "Start Time"
 TEXT_PLAYLIST_TRACK = "Track"
 TEXT_PLAYLIST_ARTIST = "Artist"
 
+def get_fmt_time(timestamp):
+    """Get the formatted time string of a timestamp.
+
+    :param timestamp
+    """
+    if timestamp is not None:
+        return time.strftime("%I:%M:%S %p", timestamp)
+    else:
+        return "00:00:00"
+
 class Automation(Frame):
+    """The Automation class is a GUI that provides radio automation."""
     STATE_STOPPED = 1
     STATE_PLAYING = 2
     STATE_STOPPING = 3
@@ -36,6 +48,7 @@ class Automation(Frame):
     _list_artist = None
 
     def __init__(self):
+        """Construct an Automation window."""
         Frame.__init__(self)
 
         # initialize title
@@ -72,18 +85,31 @@ class Automation(Frame):
         inner_playlist.grid(row=1, column=0, columnspan=3)
         playlist.grid(row=4, column=0, columnspan=4)
 
+        # initialize cart queue
         self._cart_queue = CartQueue(self.master, self._update_ui)
         self._cart_queue.add_tracks()
         self._update_ui()
 
-    ###YATES_COMMENT: Event Handler for scrolling through the three Windows.
+        # begin the event loop
+        self.master.protocol("WM_DELETE_WINDOW", self.master.destroy)
+        self.master.title(TEXT_TITLE)
+        self.master.mainloop()
+
     def _scroll_playlist(self, *args):
+        """Scroll the playlist view.
+
+        :param args
+        """
         self._list_time.yview(*args)
         self._list_track.yview(*args)
         self._list_artist.yview(*args)
 
-    ###YATES_COMMENT: Event Handler for Start->Stopping->Stopped state machine
     def _update_state(self):
+        """Move Automation to the next state.
+
+        The state machine is as follows:
+        STATE_STOPPED -> STATE_PLAYING -> STATE_STOPPING -> STATE_STOPPED
+        """
         if self._state is self.STATE_STOPPED:
             self.start()
         elif self._state is self.STATE_PLAYING:
@@ -92,6 +118,7 @@ class Automation(Frame):
             self.stop_hard()
 
     def start(self):
+        """Start Automation."""
         print "Starting Automation..."
         self._cart_queue.start()
         self._state = self.STATE_PLAYING
@@ -99,6 +126,7 @@ class Automation(Frame):
         self._button.config(bg=COLOR_BUTTON_PLAYING, highlightbackground=COLOR_BUTTON_PLAYING)
 
     def stop_soft(self):
+        """Stop Automation at the end of the current track."""
         print "Stopping Automation after this track..."
         self._cart_queue.stop_soft()
         self._state = self.STATE_STOPPING
@@ -106,27 +134,26 @@ class Automation(Frame):
         self._button.config(bg=COLOR_BUTTON_STOPPING, highlightbackground=COLOR_BUTTON_STOPPING)
 
     def stop_hard(self):
+        """Stop Automation immediately."""
         print "Stopping Automation immediately."
         self._cart_queue.transition()
         self._state = self.STATE_STOPPED
         self._button_text.set(TEXT_BUTTON_STOPPED)
         self._button.config(bg=COLOR_BUTTON_STOPPED, highlightbackground=COLOR_BUTTON_STOPPED)
 
-    def _get_fmt_start_time(self, start_time):
-        if start_time is not None:
-            return time.strftime("%I:%M:%S %p", start_time)
-        else:
-            return "00:00:00"
-
-    # callback: when anything happens in _cart_queue, run this to update the UI's state
     def _update_ui(self):
+        """Update the user interface.
+
+        This function is called at various times by the cart queue.
+        """
+
         # clear and reset the playlist
         self._list_time.delete(0, Tkinter.END)
         self._list_track.delete(0, Tkinter.END)
         self._list_artist.delete(0, Tkinter.END)
 
         for cart in self._cart_queue.get_queue():
-            self._list_time.insert(Tkinter.END, self._get_fmt_start_time(cart.start_time))
+            self._list_time.insert(Tkinter.END, get_fmt_time(cart.start_time))
             self._list_track.insert(Tkinter.END, cart.title)
             self._list_artist.insert(Tkinter.END, cart.issuer)
 
@@ -137,9 +164,7 @@ class Automation(Frame):
             self._button.config(bg=COLOR_BUTTON_STOPPED, highlightbackground=COLOR_BUTTON_STOPPED)
 
     def destroy(self):
+        """Destroy the Automation window."""
         self._cart_queue.save()
 
-automation = Automation()
-automation.master.protocol("WM_DELETE_WINDOW", automation.master.destroy)
-automation.master.title(TEXT_TITLE)
-automation.master.mainloop()
+Automation()

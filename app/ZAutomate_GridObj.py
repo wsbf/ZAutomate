@@ -1,3 +1,5 @@
+"""The GridObj module provides the GridObj class."""
+import time
 from Tkinter import Frame, Canvas
 import ZAutomate_DBInterface as database
 
@@ -38,7 +40,15 @@ COLOR_LENGTH = "#FFFF00"
 
 FONT = ('Helvetica', 10, 'bold')
 
+def get_fmt_time(seconds):
+    """Get a formatted time string from a number of seconds.
+
+    :param seconds
+    """
+    return time.strftime("%M:%S", time.localtime(seconds))
+
 class GridObj(Frame):
+    """The GridObj class is a UI element that contains a cart."""
     _parent = None
     _enable_remove = False
     _next_key = None
@@ -52,6 +62,12 @@ class GridObj(Frame):
     _is_playing = False
 
     def __init__(self, parent, enable_remove, next_key=None):
+        """Construct a GridObj.
+
+        :param parent
+        :param enable_remove
+        :param next_key
+        """
         Frame.__init__(self, parent.master, bd=1, relief='sunken', bg=COLOR_DEFAULT, width=CART_WIDTH, height=CART_HEIGHT)
         self._parent = parent
         self._enable_remove = enable_remove
@@ -69,16 +85,21 @@ class GridObj(Frame):
         self._rect.pack()
 
     def set_cart(self, cart):
+        """Set a cart for the GridObj.
+
+        :param cart
+        """
         self._cart = cart
 
-        seconds = self._cart._get_meter_data()[1] / 1000
+        seconds = self._cart.get_meter_data()[1] / 1000
 
         self._rect.itemconfigure(self._title, text=self._cart.title)
         self._rect.itemconfigure(self._issuer, text=(self._cart.issuer + " " + self._cart.cart_id))
-        self._rect.itemconfigure(self._length, text=self._parent._meter._get_fmt_time(seconds))
+        self._rect.itemconfigure(self._length, text=get_fmt_time(seconds))
         self._rect['bg'] = COLOR_TYPES_NEW[self._cart.cart_type]
 
     def remove_cart(self):
+        """Remove a cart from the GridObj."""
         self._cart = None
         self._rect.itemconfigure(self._title, text='')
         self._rect.itemconfigure(self._issuer, text='---')
@@ -86,6 +107,7 @@ class GridObj(Frame):
         self._rect['bg'] = COLOR_DEFAULT
 
     def has_cart(self):
+        """Get whether the GridObj has a cart."""
         return self._cart is not None
 
     def Reset(self):
@@ -103,7 +125,7 @@ class GridObj(Frame):
         if self._next_key is not None and self._parent.Grid[self._next_key].has_cart():
             self._parent.Grid[self._next_key].LeftClick(None)
 
-    def LeftClick(self, clickEvent):
+    def LeftClick(self, *args):
         ### click on a non-empty cart
         if self._cart is not None:
 
@@ -138,7 +160,7 @@ class GridObj(Frame):
         except AttributeError:
             pass
 
-    def RightClick(self, clickEvent):
+    def RightClick(self, *args):
         if self._enable_remove and self.has_cart() and not self._is_playing:
             self.remove_cart()
 

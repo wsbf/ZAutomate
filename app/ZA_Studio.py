@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 
+"""The Studio module provides a GUI for the digital library."""
 import thread
 import Tkinter
 from Tkinter import Frame, Label, BooleanVar, Checkbutton, Entry, Button
-from ZAutomate_GridObj import GridObj
-from ZAutomate_Meter import Meter
 import ZAutomate_DBInterface as database
 from ZAutomate_DualBox import DualBox
+from ZAutomate_GridObj import GridObj
+from ZAutomate_Meter import Meter
 
 METER_WIDTH = 1000
 GRID_ROWS = 5
@@ -21,10 +22,11 @@ TEXT_SEARCHBOX = "Search Box"
 TEXT_SEARCH = "Search"
 
 class Studio(Frame):
+    """The Studio class is a GUI for the digital library."""
     _meter = None
 
-    _rows = 0
-    _cols = 0
+    _rows = GRID_ROWS
+    _cols = GRID_COLS
     _grid = None
     _active_cart = None
     _active_grid_obj = None
@@ -36,11 +38,10 @@ class Studio(Frame):
     _selected_cart = None
 
     def __init__(self):
+        """Construct a Studio window."""
         Frame.__init__(self)
-        self._rows = GRID_ROWS
-        self._cols = GRID_COLS
 
-        # make the whole shebang resizable
+        # make the window resizable
         top = self.master.winfo_toplevel()
         for row in range(2, self._rows + 2):
             for col in range(0, self._cols):
@@ -49,15 +50,15 @@ class Studio(Frame):
                 self.rowconfigure(row, weight=1)
                 self.columnconfigure(col, weight=1)
 
-        # initialize title
+        # initialize the title
         title = Label(self.master, fg='#000', font=FONT_TITLE, text=TEXT_TITLE)
         title.grid(row=0, column=0, columnspan=self._cols)
 
-        # initialize meter
+        # initialize the meter
         self._meter = Meter(self.master, METER_WIDTH, self._get_meter_data, None)
         self._meter.grid(row=1, column=0, columnspan=self._cols)
 
-        # initialize cart grid
+        # initialize the cart grid
         self._grid = {}
 
         for row in range(1, self._rows + 1):
@@ -83,11 +84,11 @@ class Studio(Frame):
                 self._grid[key] = GridObj(self, True, next_key)
                 self._grid[key].grid(row=row + 1, column=col - 1)
 
-        # initialize dual box
+        # initialize the dual box
         self._dual_box = DualBox(self)
         self._dual_box.grid(row=self._rows + 2, column=0, columnspan=4)
 
-        # intialize auto-cart control
+        # intialize the auto-cart control
         self._auto_cart = BooleanVar()
         self._auto_cart.set(True)
 
@@ -96,7 +97,7 @@ class Studio(Frame):
         Checkbutton(control, text=TEXT_AUTOSLOT, variable=self._auto_cart, onvalue=True, offvalue=False).pack(anchor=Tkinter.NW)
         control.grid(row=self._rows + 2, column=4, columnspan=self._cols - 4)
 
-        # initialize search box, button
+        # initialize the search box, button
         Label(control, font=FONT, fg='#000', text=TEXT_SEARCHBOX).pack(anchor=Tkinter.NW)
         self._entry = Entry(control, takefocus=True, width=45, bg='#000', fg='#33CCCC')
         self._entry.bind('<Return>', self.search)
@@ -108,7 +109,12 @@ class Studio(Frame):
         # button.grid(row=self._rows + 3, column=5)
         button.pack(anchor=Tkinter.S)
 
+        # begin the event loop
+        self.master.title(TEXT_TITLE)
+        self.master.mainloop()
+
     def _search_internal(self):
+        """Search the digital library in a separate thread."""
         query = self._entry.get()
 
         if len(query) >= 3:
@@ -119,27 +125,44 @@ class Studio(Frame):
 
             print "Found %d results." % len(self._search_results)
 
-        thread.exit()
+    def search(self, *args):
+        """Search the digital library.
 
-    def search(self, event=None):
+        :param args
+        """
         thread.start_new_thread(self._search_internal, ())
 
+    # TODO: remove active cart, use only active grid object
     def is_cart_active(self):
+        """Get whether a cart is currently playing."""
         return self._active_cart is not None
 
     def set_active_cart(self, cart):
+        """Set the active cart.
+
+        :param cart
+        """
         self._active_cart = cart
 
     def set_active_grid_obj(self, grid_obj):
+        """Set the active grid object.
+
+        :param grid_obj
+        """
         self._active_grid_obj = grid_obj
 
     def select_cart(self, index):
+        """Select a cart from the search results.
+
+        :param index: index of cart in search results
+        """
         if index is not None:
             self._selected_cart = self._search_results[index]
 
     def _get_meter_data(self):
+        """Get meter data for the current cart."""
         if self._active_cart is not None:
-            return self._active_cart._get_meter_data()
+            return self._active_cart.get_meter_data()
         else:
             return ("-:--", "-:--", "--", "--", None, None)
 
@@ -152,6 +175,4 @@ class Studio(Frame):
         else:
             self._active_grid_obj.Reset()
 
-studio = Studio()
-studio.master.title(TEXT_TITLE)
-studio.master.mainloop()
+Studio()

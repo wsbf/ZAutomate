@@ -19,6 +19,8 @@ pylint **/*.py > lint.out
 
 ## TODO
 
+- consider making a Grid class
+- implement zautomate_log.php in the new API
 - move colors, fonts, text values to constants
 - add hourly reload to Cart Machine
 - analyze the insertion/removal of carts, thread management during Automation

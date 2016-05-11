@@ -1,3 +1,9 @@
+"""The Player_madao module provides the Player class.
+
+This implementation of Player uses VLC in a separate process, although
+it also uses libmad to retreive the length of the file. This implementation
+seems to work, although it prints cryptic messages from time to time.
+"""
 import os
 import signal
 import subprocess
@@ -7,27 +13,36 @@ import time
 import mad
 
 class Player(object):
+    """The Player class provides an audio stream for a file."""
     _command = None
     _pid = None
-    _length = 0          # milliseconds
-    _elapsed = 0         # milliseconds
+    _length = 0
+    _elapsed = 0
     _is_playing = False  # may need a lock
     _callback = None
 
     def __init__(self, filename):
+        """Construct a Player.
+
+        :param filename
+        """
         self._command = ["/usr/bin/vlc", "--intf", "dummy", "--play-and-exit", filename]
         self._length = mad.MadFile(filename).total_time()
 
     def length(self):
+        """Get the length of the audio stream in milliseconds."""
         return self._length
 
     def time_elapsed(self):
+        """Get the elapsed time of the audio stream in milliseconds."""
         return self._elapsed
 
     def is_playing(self):
+        """Get whether the audio stream is currently playing."""
         return self._is_playing
 
     def _play_internal(self):
+        """Play the audio stream in a separate thread."""
         while self._is_playing is True:
             time.sleep(1.0)
             self._elapsed += 1000
@@ -42,6 +57,10 @@ class Player(object):
             self._callback()
 
     def play(self, callback=None):
+        """Play the audio stream.
+
+        :param callback: function to call if the stream finishes
+        """
         if self.is_playing():
             print time.asctime() + " :=: Player_vlc :: Tried to start, but already playing"
             return
@@ -52,6 +71,7 @@ class Player(object):
         thread.start_new_thread(self._play_internal, ())
 
     def stop(self):
+        """Stop the audio stream."""
         if not self.is_playing():
             print time.asctime() + " :=: Player_vlc :: Tried to stop, but not playing"
             return

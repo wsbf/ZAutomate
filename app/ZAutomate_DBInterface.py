@@ -1,3 +1,4 @@
+"""The database module provides a collection of functions for the server API."""
 import os
 import time
 import requests
@@ -5,7 +6,6 @@ from ZAutomate_Cart import Cart
 
 LIBRARY_PREFIX = "/media/ZAL/"
 
-### URLs for the web interface
 URL_CARTLOAD = "https://dev.wsbf.net/api/zautomate/cartmachine_load.php"
 URL_AUTOLOAD = "https://dev.wsbf.net/api/zautomate/automation_generate_showplist.php"
 URL_AUTOSTART = "https://dev.wsbf.net/api/zautomate/automation_generate_showid.php"
@@ -13,18 +13,13 @@ URL_AUTOCART = "https://dev.wsbf.net/api/zautomate/automation_add_carts.php"
 URL_STUDIOSEARCH = "https://dev.wsbf.net/api/zautomate/studio_search.php"
 URL_LOG = "https://dev.wsbf.net/api/zautomate/zautomate_log.php"
 
-### sid.conf stores the previous/current show ID
 FILE_AUTOCONF = "sid.conf"
-
-### enable logging
-LOGGING = True
 
 def get_new_show_id(show_id):
     """Get a new show ID for queueing playlists.
 
     :param show_id: previous show ID, which will be excluded
     """
-
     try:
         res = requests.get(URL_AUTOSTART, params={"showid": show_id})
         return res.json()
@@ -32,9 +27,28 @@ def get_new_show_id(show_id):
         print "Error: Could not fetch starting show ID."
         return -1
 
+def save_show_id(show_id):
+    """Save a show ID to the config file.
+
+    When Automation exits for any reason, it saves the current show ID
+    in the cart queue so that when Automation is restarted, it can pull
+    from the same playlist and thereby maintain continuity. However, in
+    such a scenario the cart queue might play tracks twice if it played
+    them before an exit, because the cart queue does not check tracks
+    against the logbook. Therefore, either this feature should be scrapped
+    or the cart queue should employ more rigorous checking for duplicates.
+
+    :param show_id
+    """
+    try:
+        f = open(FILE_AUTOCONF, "w")
+        f.write((str)(show_id + 1))
+        f.close()
+    except IOError:
+        print "Error: Could not save show ID to config file."
+
 def restore_show_id():
     """Attempt to read the show ID that was saved to the config file."""
-
     if os.access(FILE_AUTOCONF, os.R_OK) is True:
         f = open(FILE_AUTOCONF, "r")
         show_id = f.read()
@@ -44,18 +58,11 @@ def restore_show_id():
 
     return -1
 
-def save_show_id(show_id):
-    """Save a show ID to the config file."""
-
-    try:
-        f = open(FILE_AUTOCONF, "w")
-        f.write((str)(show_id + 1))
-        f.close()
-    except IOError:
-        print "Error: Could not save show ID to config file."
-
 def get_cart(cart_type):
-    """Get a random cart of a given type."""
+    """Get a random cart of a given type.
+
+    :param cart_type
+    """
 
     # temporary code to transform cart_type to index
     types = {
@@ -93,30 +100,16 @@ def get_cart(cart_type):
 
     return None
 
-def get_next_playlist(show_id):
+def get_playlist(show_id):
     """Get the playlist from a past show.
 
-    Currently the previous show ID is just incremented,
-    which is not guaranteed to yield a valid playlist,
-    so this function is usually called several times until
-    enough tracks are retrieved.
-
-    :param show_id: previous show ID
+    :param show_id: show ID
     """
+    playlist = []
 
-    # get next show ID
-    show_id += 1
-
-    # get next playlist
-    show = {
-        "showID": -1,
-        "playlist": []
-    }
     try:
         res = requests.get(URL_AUTOLOAD, params={"showid": show_id})
         show_res = res.json()
-
-        show["showID"] = show_res["showID"]
 
         for t in show_res["playlist"]:
             # TODO: move pathname building to Track constructor
@@ -126,11 +119,11 @@ def get_next_playlist(show_id):
             track = Cart(track_id, t["lb_track_name"], t["artist_name"], t["rotation"], filename)
 
             if track.is_playable():
-                show["playlist"].append(track)
+                playlist.append(track)
     except requests.exceptions.ConnectionError:
         print "Error: Could not fetch playlist."
 
-    return show
+    return playlist
 
 def get_carts():
     """Load a dictionary of cart arrays for each cart type."""
@@ -147,12 +140,11 @@ def get_carts():
             carts_res = res.json()
 
             for c in carts_res:
-                # TODO: consider moving filename construction to Cart
+                # TODO: move pathname building to Cart constructor
                 filename = LIBRARY_PREFIX + "carts/" + c["filename"]
 
                 cart = Cart(c["cartID"], c["title"], c["issuer"], c["type"], filename)
 
-                # verify that this file exists
                 if cart.is_playable():
                     carts[t].append(cart)
 
@@ -166,8 +158,8 @@ def search_library(query):
 
     :param query: search term
     """
-
     results = []
+
     try:
         res = requests.get(URL_STUDIOSEARCH, params={"query": query})
         results_res = res.json()
@@ -196,10 +188,6 @@ def log_cart(cart_id):
 
     :param cart_id: cart ID, or [album_code]-[track_num] for a track
     """
-
-    if LOGGING is False:
-        return
-
     try:
         res = requests.post(URL_LOG, params={"cartid": cart_id})
         print res.text

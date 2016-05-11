@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+"""The CartMachine module provides a GUI for playing carts."""
 import random
 import Tkinter
 from Tkinter import Frame, Label, Button
@@ -24,6 +25,7 @@ TEXT_TITLE = "ZAutomate :: Cart Machine"
 TEXT_RELOAD = "Reload"
 
 class CartMachine(Frame):
+    """The CartMachine class is a GUI that provides a grid of carts."""
     _meter = None
 
     _rows = GRID_ROWS
@@ -33,6 +35,7 @@ class CartMachine(Frame):
     _active_grid_obj = None
 
     def __init__(self):
+        """Construct a CartMachine window."""
         Frame.__init__(self)
 
         # make the window resizable
@@ -73,6 +76,10 @@ class CartMachine(Frame):
         self.Gridder = Gridder(self._rows, self._cols)
 
         self._load()
+
+        # begin the event loop
+        self.master.title(TEXT_TITLE)
+        self.mainloop()
 
     def _load(self):
         """Load the grid with carts.
@@ -174,6 +181,8 @@ class CartMachine(Frame):
             toinsert += 2
 
     def reload(self):
+        """Reload the cart machine."""
+
         if self._active_cart is not None:
             return
 
@@ -184,18 +193,29 @@ class CartMachine(Frame):
         self._load()
         print "Cart Machine reloaded."
 
+    # TODO: remove active cart, use only active grid object
     def is_cart_active(self):
+        """Get whether a cart is currently playing."""
         return self._active_cart is not None
 
     def set_active_cart(self, cart):
+        """Set the active cart.
+
+        :param cart
+        """
         self._active_cart = cart
 
     def set_active_grid_obj(self, grid_obj):
+        """Set the active grid object.
+
+        :param grid_obj
+        """
         self._active_grid_obj = grid_obj
 
     def _get_meter_data(self):
+        """Get meter data for the current cart."""
         if self._active_cart is not None:
-            return self._active_cart._get_meter_data()
+            return self._active_cart.get_meter_data()
         else:
             return ("-:--", "-:--", "--", "--", None, None)
 
@@ -204,6 +224,4 @@ class CartMachine(Frame):
         self._active_cart.stop()
         self._active_grid_obj.Reset()
 
-cart_machine = CartMachine()
-cart_machine.master.title(TEXT_TITLE)
-cart_machine.mainloop()
+CartMachine()

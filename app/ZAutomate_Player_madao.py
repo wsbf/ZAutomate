@@ -1,3 +1,8 @@
+"""The Player_madao module provides the Player class.
+
+This implementation of Player uses python wrappers for libmad and libao,
+which provide interfaces to audio files and audio devices.
+"""
 import thread
 import time
 import ao
@@ -6,30 +11,38 @@ import mad
 AODEV = ao.AudioDevice(0)
 
 class Player(object):
+    """The Player class provides an audio stream for a file."""
     _filename = None
     _madfile = None
-    _length = 0          # milliseconds
     _is_playing = False  # may need a lock since stop and play_internal both write
     _callback = None
 
     def __init__(self, filename):
+        """Construct a Player.
+
+        :param filename
+        """
         self._filename = filename
         self.seek_to_front()
 
     def length(self):
-        return self._length
+        """Get the length of the audio stream in milliseconds."""
+        return self._madfile.total_time()
 
     def time_elapsed(self):
+        """Get the elapsed time of the audio stream in milliseconds."""
         return self._madfile.current_time()
 
     def is_playing(self):
+        """Get whether the audio stream is currently playing."""
         return self._is_playing
 
     def seek_to_front(self):
+        """Reset the audio stream."""
         self._madfile = mad.MadFile(self._filename)
-        self._length = self._madfile.total_time()
 
     def _play_internal(self):
+        """Play the audio stream in a separate thread."""
         while self._is_playing is True:
             buf = self._madfile.read()
             if buf is not None:
@@ -44,6 +57,10 @@ class Player(object):
             self._callback()
 
     def play(self, callback=None):
+        """Play the audio stream.
+
+        :param callback: function to call if the stream finishes
+        """
         if self.is_playing():
             print time.asctime() + " :=: Player_madao :: Tried to start, but already playing"
             return
@@ -53,6 +70,7 @@ class Player(object):
         thread.start_new_thread(self._play_internal, ())
 
     def stop(self):
+        """Stop the audio stream."""
         if not self.is_playing():
             print time.asctime() + " :=: Player_madao :: Tried to stop, but not playing"
             return

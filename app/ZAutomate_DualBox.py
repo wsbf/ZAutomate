@@ -2,11 +2,12 @@
 ### pure tcl: http://www.tcl.tk/man/tcl8.4/TkCmd/listbox.htm#M24
 ### fix dual highlight: http://www.internetcomputerforum.com/python-forum/311559-tkinter-selecting-one-item-each-two-listboxes.html
 
+"""The DualBox module provides the DualBox class."""
 import Tkinter
 from Tkinter import Frame, Scrollbar, Label, Listbox
 
 class DualBox(Frame):
-    _length = 0
+    """The DualBox class is a pair of Listboxes that has a list of carts."""
     _prev_index = None
     _select_callback = None
 
@@ -14,6 +15,10 @@ class DualBox(Frame):
     _list_box2 = None
 
     def __init__(self, parent):
+        """Construct a DualBox.
+
+        :param parent
+        """
         Frame.__init__(self, bg='#33CCCC')
         self._select_callback = parent.select_cart
 
@@ -44,13 +49,16 @@ class DualBox(Frame):
         self._list_box2.bind("<<ListboxSelect>>", self.select)
 
     def fill(self, carts):
+        """Fill the DualBox with a list of carts.
+
+        :param carts: array of carts
+        """
         self._list_box1.delete(0, Tkinter.END)
         self._list_box2.delete(0, Tkinter.END)
 
         for cart in carts:
             self._list_box1.insert(Tkinter.END, cart.title)
             self._list_box2.insert(Tkinter.END, cart.issuer)
-        self._length = len(carts)
 
     def _get_selected_index(self):
         one = self._list_box1.curselection()
@@ -79,11 +87,15 @@ class DualBox(Frame):
         return self._prev_index
 
     def select(self, *args):
+        """Select an item in the DualBox.
+
+        :param args
+        """
         index = self._get_selected_index()
 
         if index is not None:
-            self._list_box1.selection_clear(0, self._length)
-            self._list_box2.selection_clear(0, self._length)
+            self._list_box1.selection_clear(0, Tkinter.END)
+            self._list_box2.selection_clear(0, Tkinter.END)
             self._list_box1.selection_set(index, index)
             self._list_box2.selection_set(index, index)
 
