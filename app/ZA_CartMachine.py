@@ -5,13 +5,36 @@ import random
 import Tkinter
 from Tkinter import Frame, Label, Button
 import ZAutomate_DBInterface as database
-from ZAutomate_Gridder import Gridder
 from ZAutomate_GridObj import GridObj
 from ZAutomate_Meter import Meter
 
 METER_WIDTH = 1000
 GRID_ROWS = 8
 GRID_COLS = 6
+
+# configuration for each cart type
+CONFIG_CARTS = {
+    # PSA
+    0: {
+        "corner": (1, 1),
+        "limit": -1
+    },
+    # Underwriting
+    1: {
+        "corner": (GRID_ROWS, GRID_COLS),
+        "limit": -1
+    },
+    # Station ID
+    2: {
+        "corner": (1, GRID_COLS),
+        "limit": 9
+    },
+    # Promotion
+    3: {
+        "corner": (GRID_ROWS, 1),
+        "limit": -1
+    }
+}
 
 FONT_TITLE = ('Helvetica', 36, 'bold italic')
 FONT_RELOAD = ('Helvetica', 24, 'bold')
@@ -23,6 +46,74 @@ COLOR_RELOAD_FG = "#000000"
 
 TEXT_TITLE = "ZAutomate :: Cart Machine"
 TEXT_RELOAD = "Reload"
+
+def progression_radius(ROWS, COLS, corner, radius):
+    """Generate a progression of coordinates at a given radius from a corner.
+
+    Examples:
+    - radius = 0 yields the corner
+    - radius = 1 yields the 3 coordinates around the corner
+    - radius = 2 yields the 5 coordinates around the previous 3, etc
+
+    :param ROWS: rows in the grid
+    :param COLS: columns in the grid
+    :param corner: corner coordinate as a 2-tuple (row, col)
+    :param radius: number of diagonal cells from corner
+    """
+
+    # determine the directions from the corner
+    if corner[0] == 1:
+        dirR = 1
+    elif corner[0] == ROWS:
+        dirR = -1
+
+    if corner[1] == 1:
+        dirC = 1
+    elif corner[1] == COLS:
+        dirC = -1
+
+    # determine the pivot from the corner and radius
+    pivot = (corner[0] + dirR * radius, corner[1] + dirC * radius)
+
+    array = []
+
+    # append coordinates along the same row
+    for col in range(corner[1], pivot[1], dirC):
+        array.append((pivot[0], col))
+
+    # append coordinates along the same column
+    for row in range(corner[0], pivot[0], dirR):
+        array.append((row, pivot[1]))
+
+    # append the pivot coordinate
+    array.append(pivot)
+
+    # filter valid coordinates
+    array = [elem for elem in array if 0 < elem[0] <= ROWS and 0 < elem[1] <= COLS]
+
+    return array
+
+def progression(ROWS, COLS, corner):
+    """Generate a progression of coordinates from a corner.
+
+    The progression begins at the corner and expands outward
+    until every coordinate in the grid is included.
+
+    :param ROWS: rows in the grid
+    :param COLS: columns in the grid
+    :param corner: corner coordinate as a 2-tuple (row, col)
+    """
+
+    # append each radius of the progression
+    array = []
+
+    for radius in range(0, max(ROWS, COLS)):
+        array.extend(progression_radius(ROWS, COLS, corner, radius))
+
+    # temporary code to transform tuples into strings
+    array = [(str)(elem[0])+"x"+(str)(elem[1]) for elem in array]
+
+    return array
 
 class CartMachine(Frame):
     """The CartMachine class is a GUI that provides a grid of carts."""
@@ -73,8 +164,6 @@ class CartMachine(Frame):
                 self._grid[key] = GridObj(self, False)
                 self._grid[key].grid(row=row + 1, column=col - 1)
 
-        self.Gridder = Gridder(self._rows, self._cols)
-
         self._load()
 
         # begin the event loop
@@ -93,92 +182,48 @@ class CartMachine(Frame):
         fill middle space not covered by the other types.
         """
 
-        # configuration for each cart type
-        config = {
-            # PSA
-            0: {
-                "corner": (1, 1),
-                "limit": -1,
-                "shuffle": True
-            },
-            # Underwriting
-            1: {
-                "corner": (self._rows, self._cols),
-                "limit": -1,
-                "shuffle": False
-            },
-            # Station ID
-            2: {
-                "corner": (1, self._cols),
-                "limit": 9,
-                "shuffle": True
-            },
-            # Promotion
-            3: {
-                "corner": (self._rows, 1),
-                "limit": -1,
-                "shuffle": False
-            }
-        }
-
         # generate a progression of cells for each corner
         progs = {}
-        for t in config:
-            progs[t] = self.Gridder.GridCorner(config[t]["corner"])
+        for cart_type in CONFIG_CARTS:
+            progs[cart_type] = progression(self._rows, self._cols, CONFIG_CARTS[cart_type]["corner"])
 
         # get a dictonary of carts for each cart type
         carts = database.get_carts()
 
-        # apply limiting and shuffling to each cart type
-        for t in carts:
-            if config[t]["shuffle"] is True:
-                random.shuffle(carts[t])
+        # apply shuffling and limiting to each cart type
+        for cart_type in carts:
+            random.shuffle(carts[cart_type])
 
-            limit = config[t]["limit"]
+            limit = CONFIG_CARTS[cart_type]["limit"]
             if limit is not -1:
-                carts[t] = carts[t][0:limit]
+                carts[cart_type] = carts[cart_type][0:limit]
 
-        # total number of carts inserted
-        numinserted = 0
+        # insert carts until the grid is full or all carts are inserted
+        num_inserted = 0
 
-        # number of carts to insert next
-        #
-        # when iterating through the cart types,
-        # each cart type attempts to insert enough
-        # carts to fill the next layer (1 for the corner,
-        # then 3 for around the corner, then 5, and so on)
-        toinsert = 1
+        for i in range(0, max(self._rows, self._cols)):
+            for cart_type in carts:
+                # insert a layer for each cart type
+                num_toinsert = 1 + 2 * i
 
-        ## keep iterating until the grid is full
-        while numinserted <= self._rows * self._cols:
-            numempty = 0
-            for t in carts:
-                for i in range(0, toinsert):
+                while len(carts[cart_type]) > 0 and num_toinsert > 0:
+                    # pop the first empty coordinate from the progression
+                    key = progs[cart_type].pop(0)
+                    while self._grid[key].has_cart():
+                        key = progs[cart_type].pop(0)
 
-                    # load a cart from this cart type
-                    if len(carts[t]) > 0:
-                        # pop the first unused coordinate from the progression
-                        key = progs[t].pop(0)
-                        while self._grid[key].has_cart():
-                            if len(progs[t]) > 0:
-                                key = progs[t].pop(0)
-                            else:
-                                return
+                    # add the cart to the grid
+                    self._grid[key].set_cart(carts[cart_type].pop(0))
+                    num_inserted += 1
+                    num_toinsert -= 1
 
-                        # add the cart to the grid
-                        self._grid[key].set_cart(carts[t].pop(0))
-                        numinserted += 1
+                    # exit if the grid is full
+                    if num_inserted is self._rows * self._cols:
+                        return
 
-                        ## extra control structure because we are 2 loops in
-                        if numinserted == self._rows * self._cols:
-                            return
-                    else:
-                        numempty += 1
-
-            if numempty is len(carts):
-                return
-
-            toinsert += 2
+                # exit if all carts are inserted
+                if len([key for key in carts if len(carts[key]) > 0]) is 0:
+                    break
 
     def reload(self):
         """Reload the cart machine."""
