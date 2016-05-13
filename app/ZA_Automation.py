@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 """The Automation module provides a GUI for radio automation."""
-import time
 import Tkinter
 from Tkinter import Label, StringVar, Button, Frame, Scrollbar, Listbox
 from ZAutomate_CartQueue import CartQueue
@@ -20,16 +19,6 @@ TEXT_BUTTON_STOPPING = "STOP NOW"
 TEXT_PLAYLIST_TIME = "Start Time"
 TEXT_PLAYLIST_TRACK = "Track"
 TEXT_PLAYLIST_ARTIST = "Artist"
-
-def get_fmt_time(timestamp):
-    """Get the formatted time string of a timestamp.
-
-    :param timestamp
-    """
-    if timestamp is not None:
-        return time.strftime("%I:%M:%S %p", timestamp)
-    else:
-        return "00:00:00"
 
 class Automation(Frame):
     """The Automation class is a GUI that provides radio automation."""
@@ -153,7 +142,7 @@ class Automation(Frame):
         self._list_artist.delete(0, Tkinter.END)
 
         for cart in self._cart_queue.get_queue():
-            self._list_time.insert(Tkinter.END, get_fmt_time(cart.start_time))
+            self._list_time.insert(Tkinter.END, cart.start_time.strftime("%I:%M:%S %p"))
             self._list_track.insert(Tkinter.END, cart.title)
             self._list_artist.insert(Tkinter.END, cart.issuer)
 

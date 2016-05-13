@@ -18,27 +18,32 @@ CART_TYPES = [
 ### - 2 PSAs each hour
 ### - 1 Underwriting each hour
 ###
-### types      array of cart types to play
+### type       cart type to play
 ### minute     target play time within each hour
 ### max_delta  maximum deviation from minute, in seconds
 AUTOMATION_CARTS = [
     {
-        "types": ["StationID"],
-        "minute": 1,  # TODO: should this be 0?
+        "type": "StationID",
+        "minute": 0,
         "max_delta": 300
     },
     {
-        "types": ["StationID", "PSA"],
+        "type": "PSA",
         "minute": 15,
         "max_delta": 300
     },
     {
-        "types": ["StationID", "Underwriting"],
+        "type": "StationID",
         "minute": 30,
         "max_delta": 300
     },
     {
-        "types": ["StationID", "PSA"],
+        "type": "Underwriting",
+        "minute": 30,
+        "max_delta": 300
+    },
+    {
+        "type": "PSA",
         "minute": 45,
         "max_delta": 300
     }
@@ -136,19 +141,15 @@ class CartQueue(object):
 
         :param begin_index
         """
-        base_time = time.localtime()
+        start_time = datetime.datetime.now()
 
         for i in range(begin_index, len(self._queue)):
-            ## for each cart after the first, add the length of the previous
-            ## track to produce the start time
             if i > 0:
-                prev_start_time = self._queue[i - 1].start_time
-                prev_length = self._queue[i - 1].get_meter_data()[1] / 1000
-                start_time = time.mktime(prev_start_time) + prev_length
-                base_time = time.localtime(start_time)
+                prev = self._queue[i - 1]
+                prev_length = datetime.timedelta(milliseconds=prev.get_meter_data()[1])
+                start_time = prev.start_time + prev_length
 
-            ## set the current cart's starting time
-            self._queue[i].start_time = base_time
+            self._queue[i].start_time = start_time
 
     def add_tracks(self):
         """Append tracks to the queue.
@@ -182,38 +183,40 @@ class CartQueue(object):
         runs out of carts.
         """
         for entry in AUTOMATION_CARTS:
-            self._insert_cart(entry["types"], entry["minute"], entry["max_delta"])
+            self._insert_cart(entry["type"], entry["minute"], entry["max_delta"])
 
-    # TODO: don't try to insert carts at end of queue before target window
-    def _insert_cart(self, types, minute, max_delta):
+    def _insert_cart(self, cart_type, minute, max_delta):
         """Insert carts into the current hour according to a config entry.
 
         This function inserts carts as close as possible to the target
         start time, even if the target window is not met.
 
-        :param types
+        :param cart_type
         :param minute
         :param max_delta
         """
         target = datetime.datetime.now().replace(minute=minute, second=0, microsecond=0)
+        target_delta = datetime.timedelta(seconds=max_delta)
 
-        ## don't insert if the window has already passed this hour
-        if target + datetime.timedelta(seconds=max_delta) < datetime.datetime.now():
+        # don't insert if the target window has already passed this hour
+        if target + target_delta < datetime.datetime.now():
+            return
+
+        # don't insert if the queue has not reached the target window
+        last = self._queue[len(self._queue) - 1]
+        last_length = datetime.timedelta(milliseconds=last.get_meter_data()[1])
+
+        if last.start_time + last_length < target - target_delta:
             return
 
         print time.asctime() + " :=: CartQueue :: Target insert time is " + (str)(target)
 
-        ## find the position in queue with the closest start time to target
+        # find the position in queue with the closest start time to target
         min_index = -1
         min_delta = None
 
-        ## TODO: the head of the queue is ignored for multi-threading safety
-        ##       however, it might be more prudent to use a lock
-        for i in range(1, len(self._queue)):
-            start_time = self._queue[i].start_time
-            start_time = datetime.datetime.fromtimestamp(time.mktime(start_time))
-
-            delta = abs(target - start_time)
+        for i in range(0, len(self._queue)):
+            delta = abs(target - self._queue[i].start_time)
 
             if min_delta is None or delta < min_delta:
                 min_index = i
@@ -229,12 +232,10 @@ class CartQueue(object):
         else:
             print time.asctime() + " :=: CartQueue :: Carts not inserted within target window"
 
-        ## insert a cart of each type into the queue
-        index = min_index
-        for t in types:
-            cart = database.get_cart(t)
-            self._queue.insert(index, cart)
-            index += 1
+        # insert cart into the queue
+        cart = database.get_cart(cart_type)
+
+        self._queue.insert(min_index, cart)
         self._gen_start_times(min_index)
 
     def _remove_carts(self):
