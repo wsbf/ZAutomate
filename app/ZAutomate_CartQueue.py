@@ -297,4 +297,4 @@ class CartQueue(object):
         if len(self._queue) > 0:
             return self._queue[0].get_meter_data()
         else:
-            return ("-:--", "-:--", "", "", "", "")
+            return None

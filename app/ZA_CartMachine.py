@@ -122,7 +122,6 @@ class CartMachine(Frame):
     _rows = GRID_ROWS
     _cols = GRID_COLS
     _grid = None
-    _active_cart = None
     _active_grid_obj = None
 
     def __init__(self):
@@ -161,7 +160,7 @@ class CartMachine(Frame):
         for row in range(1, self._rows + 1):
             for col in range(1, self._cols + 1):
                 key = (str)(row) + "x" + (str)(col)
-                self._grid[key] = GridObj(self, False)
+                self._grid[key] = GridObj(self, self._end_callback, False)
                 self._grid[key].grid(row=row + 1, column=col - 1)
 
         self._load()
@@ -228,7 +227,7 @@ class CartMachine(Frame):
     def reload(self):
         """Reload the cart machine."""
 
-        if self._active_cart is not None:
+        if self._active_grid_obj is not None:
             return
 
         print "Reloading the Cart Machine..."
@@ -238,17 +237,9 @@ class CartMachine(Frame):
         self._load()
         print "Cart Machine reloaded."
 
-    # TODO: remove active cart, use only active grid object
-    def is_cart_active(self):
+    def is_playing(self):
         """Get whether a cart is currently playing."""
-        return self._active_cart is not None
-
-    def set_active_cart(self, cart):
-        """Set the active cart.
-
-        :param cart
-        """
-        self._active_cart = cart
+        return self._active_grid_obj is not None
 
     def set_active_grid_obj(self, grid_obj):
         """Set the active grid object.
@@ -259,14 +250,16 @@ class CartMachine(Frame):
 
     def _get_meter_data(self):
         """Get meter data for the current cart."""
-        if self._active_cart is not None:
-            return self._active_cart.get_meter_data()
+        if self._active_grid_obj is not None:
+            return self._active_grid_obj.get_cart().get_meter_data()
         else:
-            return ("-:--", "-:--", "--", "--", None, None)
+            return None
 
-    # TODO: Meter never actually calls this function
-    def EndCallback(self):
-        self._active_cart.stop()
-        self._active_grid_obj.Reset()
+    def _end_callback(self):
+        """Reset the active grid object.
+
+        This function is called whenever a cart finishes.
+        """
+        self._active_grid_obj.reset()
 
 CartMachine()

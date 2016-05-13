@@ -17,7 +17,7 @@ FONT_TITLE = ("Helvetica", 36, "bold italic")
 FONT = ("Helvetica", 14, "bold")
 
 TEXT_TITLE = "ZAutomate :: DJ Studio"
-TEXT_AUTOSLOT = "Auto-queue Tracks"
+TEXT_AUTOSLOT = "Auto-queue tracks"
 TEXT_SEARCHBOX = "Search Box"
 TEXT_SEARCH = "Search"
 
@@ -28,11 +28,10 @@ class Studio(Frame):
     _rows = GRID_ROWS
     _cols = GRID_COLS
     _grid = None
-    _active_cart = None
     _active_grid_obj = None
 
     _dual_box = None
-    _auto_cart = None
+    _auto_queue = None
     _entry = None
     _search_results = None
     _selected_cart = None
@@ -78,23 +77,25 @@ class Studio(Frame):
                     else:
                         next_row = 1
                         next_col += 1
+                else:
+                    next_row += 1
 
                 next_key = (str)(next_row) + "x" + (str)(next_col)
 
-                self._grid[key] = GridObj(self, True, next_key)
+                self._grid[key] = GridObj(self, self._end_callback, True, next_key)
                 self._grid[key].grid(row=row + 1, column=col - 1)
 
         # initialize the dual box
         self._dual_box = DualBox(self)
         self._dual_box.grid(row=self._rows + 2, column=0, columnspan=4)
 
-        # intialize the auto-cart control
-        self._auto_cart = BooleanVar()
-        self._auto_cart.set(True)
+        # intialize the auto-queue control
+        self._auto_queue = BooleanVar()
+        self._auto_queue.set(True)
 
         control = Frame(self.master, bd=2, relief=Tkinter.SUNKEN)
 
-        Checkbutton(control, text=TEXT_AUTOSLOT, variable=self._auto_cart, onvalue=True, offvalue=False).pack(anchor=Tkinter.NW)
+        Checkbutton(control, text=TEXT_AUTOSLOT, variable=self._auto_queue, onvalue=True, offvalue=False).pack(anchor=Tkinter.NW)
         control.grid(row=self._rows + 2, column=4, columnspan=self._cols - 4)
 
         # initialize the search box, button
@@ -132,25 +133,6 @@ class Studio(Frame):
         """
         thread.start_new_thread(self._search_internal, ())
 
-    # TODO: remove active cart, use only active grid object
-    def is_cart_active(self):
-        """Get whether a cart is currently playing."""
-        return self._active_cart is not None
-
-    def set_active_cart(self, cart):
-        """Set the active cart.
-
-        :param cart
-        """
-        self._active_cart = cart
-
-    def set_active_grid_obj(self, grid_obj):
-        """Set the active grid object.
-
-        :param grid_obj
-        """
-        self._active_grid_obj = grid_obj
-
     def select_cart(self, index):
         """Select a cart from the search results.
 
@@ -159,20 +141,29 @@ class Studio(Frame):
         if index is not None:
             self._selected_cart = self._search_results[index]
 
+    def is_playing(self):
+        """Get whether a cart is currently playing."""
+        return self._active_grid_obj is not None
+
+    def set_active_grid_obj(self, grid_obj):
+        """Set the active grid object.
+
+        :param grid_obj
+        """
+        self._active_grid_obj = grid_obj
+
     def _get_meter_data(self):
         """Get meter data for the current cart."""
-        if self._active_cart is not None:
-            return self._active_cart.get_meter_data()
+        if self._active_grid_obj is not None:
+            return self._active_grid_obj.get_cart().get_meter_data()
         else:
-            return ("-:--", "-:--", "--", "--", None, None)
+            return None
 
-    # TODO: Meter never calls this function, so auto-slot rotation doesn't work
-    def EndCallback(self):
-        self._active_cart.stop()
+    def _end_callback(self):
+        """Reset the active grid object.
 
-        if self._auto_cart.get() is True:
-            self._active_grid_obj.OnComplete()
-        else:
-            self._active_grid_obj.Reset()
+        This function is called whenever a cart finishes.
+        """
+        self._active_grid_obj.reset(self._auto_queue.get())
 
 Studio()

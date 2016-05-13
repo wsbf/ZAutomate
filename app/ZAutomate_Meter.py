@@ -65,11 +65,14 @@ class Meter(Canvas):
         self._bar_bg = self.create_rectangle(self._x0, self._y0, self._x1, self._y1, fill="#008500", width=1)
         self._bar_fg = self.create_rectangle(self._x0, self._y0, 0, self._y1, fill="#FF0000", width=1)
 
+    # TODO: implement end_callback, although it probably won't be used
     def _run(self):
         """Run the meter in a separate thread."""
-        while self._is_playing is True:
-            # (position [ms], length [ms], title, artist, id, type)
+        while self._is_playing:
+            # (position [ms], length [ms], title, artist)
             data = self._data_callback()
+            if data is None:
+                data = (0, 0, "--", "--")
 
             # if data[0] >= data[1]:
             #     break

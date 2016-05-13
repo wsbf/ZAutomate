@@ -43,16 +43,16 @@ class Player(object):
 
     def _play_internal(self):
         """Play the audio stream in a separate thread."""
-        while self._is_playing is True:
+        while self._is_playing:
             time.sleep(1.0)
             self._elapsed += 1000
             if self._elapsed >= self._length:
                 break
 
-        if self._is_playing is False:
+        if not self._is_playing:
             os.kill(self._pid, signal.SIGKILL)
 
-        if self._callback is not None and self._is_playing is True:
+        if self._callback is not None and self._is_playing:
             self._is_playing = False
             self._callback()
 
@@ -61,7 +61,7 @@ class Player(object):
 
         :param callback: function to call if the stream finishes
         """
-        if self.is_playing():
+        if self._is_playing:
             print time.asctime() + " :=: Player_vlc :: Tried to start, but already playing"
             return
 
@@ -72,7 +72,7 @@ class Player(object):
 
     def stop(self):
         """Stop the audio stream."""
-        if not self.is_playing():
+        if not self._is_playing:
             print time.asctime() + " :=: Player_vlc :: Tried to stop, but not playing"
             return
 

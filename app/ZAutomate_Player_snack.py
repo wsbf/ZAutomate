@@ -25,7 +25,7 @@ class Player(object):
         :param filename
         """
         self._filename = filename
-        self.seek_to_front()
+        self.reset()
 
     def length(self):
         """Get the length of the audio stream in milliseconds."""
@@ -39,7 +39,7 @@ class Player(object):
         """Get whether the audio stream is currently playing."""
         return self._is_playing
 
-    def seek_to_front(self):
+    def reset(self):
         """Reset the audio stream."""
         self._snack = tkSnack.Sound(load=self._filename)
 
@@ -48,7 +48,7 @@ class Player(object):
 
         :param callback: function to call if the stream finishes
         """
-        if self.is_playing():
+        if self._is_playing:
             print time.asctime() + " :=: Player_snack :: Tried to start, but already playing"
             return
 
@@ -58,7 +58,7 @@ class Player(object):
 
     def stop(self):
         """Stop the audio stream."""
-        if not self.is_playing():
+        if not self._is_playing:
             print time.asctime() + " :=: Player_snack :: Tried to stop, but not playing"
             return
 
@@ -66,4 +66,4 @@ class Player(object):
         self._callback = None
         self._snack.stop()
 
-        self.seek_to_front()
+        self.reset()

@@ -24,8 +24,6 @@ pylint **/*.py > lint.out
 - move colors, fonts, text values to constants
 - add hourly reload to Cart Machine
 - analyze the insertion/removal of carts, thread management during Automation
-- make Auto-Slot Rotation work
-- review layering/communication between Player, Cart, and GridObj
 - separate Logbook_Log into log_cart and log_track
 - create separate classes for carts and tracks
 - resolve lint errors

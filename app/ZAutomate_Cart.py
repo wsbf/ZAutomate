@@ -49,10 +49,6 @@ class Cart(object):
         """Get whether the cart is currently playing."""
         return self._player.is_playing()
 
-    def seek_to_front(self):
-        """Reset the cart's audio stream."""
-        self._player.seek_to_front()
-
     def start(self, callback=None):
         """Play the cart's audio stream.
 
@@ -67,5 +63,5 @@ class Cart(object):
         self._player.stop()
 
     def get_meter_data(self):
-        """Get the meter data for the cart as a 6-tuple."""
-        return (self._player.time_elapsed(), self._player.length(), self.title, self.issuer, self.cart_id, self.cart_type)
+        """Get the meter data for the cart as a 4-tuple."""
+        return (self._player.time_elapsed(), self._player.length(), self.title, self.issuer)

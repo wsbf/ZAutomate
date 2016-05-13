@@ -23,7 +23,7 @@ class Player(object):
         :param filename
         """
         self._filename = filename
-        self.seek_to_front()
+        self.reset()
 
     def length(self):
         """Get the length of the audio stream in milliseconds."""
@@ -37,13 +37,13 @@ class Player(object):
         """Get whether the audio stream is currently playing."""
         return self._is_playing
 
-    def seek_to_front(self):
+    def reset(self):
         """Reset the audio stream."""
         self._madfile = mad.MadFile(self._filename)
 
     def _play_internal(self):
         """Play the audio stream in a separate thread."""
-        while self._is_playing is True:
+        while self._is_playing:
             buf = self._madfile.read()
             if buf is not None:
                 AODEV.play(buf, len(buf))
@@ -51,8 +51,8 @@ class Player(object):
                 print time.asctime() + " :=: Player_madao :: Buffer is empty"
                 break
 
-        if self._callback is not None and self._is_playing is True:
-            self.seek_to_front()
+        if self._callback is not None and self._is_playing:
+            self.reset()
             self._is_playing = False
             self._callback()
 
@@ -61,7 +61,7 @@ class Player(object):
 
         :param callback: function to call if the stream finishes
         """
-        if self.is_playing():
+        if self._is_playing:
             print time.asctime() + " :=: Player_madao :: Tried to start, but already playing"
             return
 
@@ -71,7 +71,7 @@ class Player(object):
 
     def stop(self):
         """Stop the audio stream."""
-        if not self.is_playing():
+        if not self._is_playing:
             print time.asctime() + " :=: Player_madao :: Tried to stop, but not playing"
             return
 
