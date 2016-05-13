@@ -29,7 +29,5 @@ pylint **/*.py > lint.out
 - resolve lint errors
 - clean up print statements, use `logging` module
 - Automation stops playing PSAs after a long time?
-- Cart Machine buttons must be pressed 2-3 times to play
 - Large queries in DJ Studio interrupt audio streaming (use multiprocess)
 - Consider combining the three modules into one window
-- sort through the three player modules

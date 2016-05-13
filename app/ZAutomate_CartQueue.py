@@ -96,7 +96,7 @@ class CartQueue(object):
         self._update_callback = update_callback
 
         # initialize the meter
-        self._meter = Meter(master, METER_WIDTH, self._get_meter_data, None)
+        self._meter = Meter(master, METER_WIDTH, self._get_meter_data)
         self._meter.grid(row=1, column=0, columnspan=4)
 
     def get_queue(self):
@@ -110,8 +110,10 @@ class CartQueue(object):
     def _enqueue(self):
         """Start the first track in the queue."""
         print time.asctime() + " :=: CartQueue :: Enqueuing " + self._queue[0].cart_id
-        self._meter.start()
+
         self._queue[0].start(self.transition)
+        self._meter.start()
+
         database.log_cart(self._queue[0].cart_id)
 
     def _dequeue(self):

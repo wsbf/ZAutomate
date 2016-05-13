@@ -54,7 +54,7 @@ class Cart(object):
 
         :param callback: function to call if the stream ends
         """
-        print time.asctime() + " :=: Cart :: Start :: " + self.title + " - " + self.issuer
+        print time.asctime() + " :=: Cart :: Start :: " + self.issuer + " - " + self.title
         self._player.play(callback)
 
     def stop(self):

@@ -151,7 +151,7 @@ class CartMachine(Frame):
         reload_button.grid(row=0, column=self._cols - 1)
 
         # initialize the meter
-        self._meter = Meter(self.master, METER_WIDTH, self._get_meter_data, None)
+        self._meter = Meter(self.master, METER_WIDTH, self._get_meter_data)
         self._meter.grid(row=1, column=0, columnspan=self._cols)
         # self._meter.grid_propagate(0)
 
@@ -166,6 +166,7 @@ class CartMachine(Frame):
         self._load()
 
         # begin the event loop
+        self.master.protocol("WM_DELETE_WINDOW", self.master.destroy)
         self.master.title(TEXT_TITLE)
         self.mainloop()
 

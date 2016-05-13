@@ -98,11 +98,11 @@ class GridObj(Frame):
         """
         self._cart = cart
 
-        seconds = self._cart.get_meter_data()[1] / 1000
+        length = self._cart.get_meter_data()[1] / 1000
 
         self._rect.itemconfigure(self._title, text=self._cart.title)
         self._rect.itemconfigure(self._issuer, text=(self._cart.issuer + " " + self._cart.cart_id))
-        self._rect.itemconfigure(self._length, text=get_fmt_time(seconds))
+        self._rect.itemconfigure(self._length, text=get_fmt_time(length))
         self._rect["bg"] = COLOR_TYPES_NEW[self._cart.cart_type]
 
     def remove_cart(self):

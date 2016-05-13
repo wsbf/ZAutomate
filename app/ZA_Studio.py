@@ -54,7 +54,7 @@ class Studio(Frame):
         title.grid(row=0, column=0, columnspan=self._cols)
 
         # initialize the meter
-        self._meter = Meter(self.master, METER_WIDTH, self._get_meter_data, None)
+        self._meter = Meter(self.master, METER_WIDTH, self._get_meter_data)
         self._meter.grid(row=1, column=0, columnspan=self._cols)
 
         # initialize the cart grid
@@ -91,7 +91,7 @@ class Studio(Frame):
 
         # intialize the auto-queue control
         self._auto_queue = BooleanVar()
-        self._auto_queue.set(True)
+        self._auto_queue.set(False)
 
         control = Frame(self.master, bd=2, relief=Tkinter.SUNKEN)
 
@@ -111,6 +111,7 @@ class Studio(Frame):
         button.pack(anchor=Tkinter.S)
 
         # begin the event loop
+        self.master.protocol("WM_DELETE_WINDOW", self.master.destroy)
         self.master.title(TEXT_TITLE)
         self.master.mainloop()
 

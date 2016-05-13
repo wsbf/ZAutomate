@@ -1,17 +1,24 @@
 """The Meter module provides the Meter class."""
 import thread
 import time
+import Tkinter
 from Tkinter import Canvas
 
 METER_HEIGHT = 135
-METER_INTERVAL = 0.25
+METER_INTERVAL = 0.50
 
 COLOR_METER_BG = "#000000"
 COLOR_METER_TEXT = "#33CCCC"
+COLOR_BAR_BG = "#008500"
+COLOR_BAR_FG = "#FF0000"
 
 FONT_HEAD = ("Helvetica", 22, "bold")
 FONT_SMALL = ("Helvetica", 12)
 FONT_NUM = ("Courier", 22, "bold")
+
+TEXT_POSITION = "Position"
+TEXT_LENGTH = "Length"
+TEXT_CUE = "To Cue"
 
 def get_fmt_time(seconds):
     """Get a formatted time string from a number of seconds.
@@ -23,7 +30,6 @@ def get_fmt_time(seconds):
 class Meter(Canvas):
     """The Meter class is a UI element that shows the elapsed time of a track."""
     _data_callback = None
-    _end_callback = None
     _is_playing = False
 
     _position = None
@@ -32,7 +38,7 @@ class Meter(Canvas):
     _title = None
     _artist = None
 
-    def __init__(self, master, width, data_callback, end_callback):
+    def __init__(self, master, width, data_callback):
         """Construct a Meter.
 
         :param master
@@ -43,7 +49,6 @@ class Meter(Canvas):
         Canvas.__init__(self, master, bg=COLOR_METER_BG, borderwidth="2", relief="groove", width=width, height=METER_HEIGHT)
 
         self._data_callback = data_callback
-        self._end_callback = end_callback
 
         self._width = (int)(self.cget("width"))
         self._x0 = 0
@@ -51,31 +56,30 @@ class Meter(Canvas):
         self._x1 = self._width + 5
         self._y1 = METER_HEIGHT
 
-        self.create_text(10, 60, anchor="w", font=FONT_SMALL, text="Position", fill=COLOR_METER_TEXT)
-        self.create_text(140, 60, anchor="w", font=FONT_SMALL, text="Length", fill=COLOR_METER_TEXT)
-        self.create_text(270, 60, anchor="w", font=FONT_SMALL, text="To Cue", fill=COLOR_METER_TEXT)
+        self.create_text(10, 60, anchor=Tkinter.W, font=FONT_SMALL, text=TEXT_POSITION, fill=COLOR_METER_TEXT)
+        self.create_text(140, 60, anchor=Tkinter.W, font=FONT_SMALL, text=TEXT_LENGTH, fill=COLOR_METER_TEXT)
+        self.create_text(270, 60, anchor=Tkinter.W, font=FONT_SMALL, text=TEXT_CUE, fill=COLOR_METER_TEXT)
 
-        self._position = self.create_text(10, 85, anchor="w", font=FONT_NUM, text="0:00", fill=COLOR_METER_TEXT)
-        self._length = self.create_text(140, 85, anchor="w", font=FONT_NUM, text="0:00", fill=COLOR_METER_TEXT)
-        self._cue = self.create_text(270, 85, anchor="w", font=FONT_NUM, text="0:00", fill=COLOR_METER_TEXT)
-        self._title = self.create_text(10, 20, anchor="w", font=FONT_HEAD, text="--", fill=COLOR_METER_TEXT)
-        self._artist = self.create_text(self._width, 20, anchor="e", font=FONT_HEAD, text="--", fill=COLOR_METER_TEXT)
+        self._position = self.create_text(10, 85, anchor=Tkinter.W, font=FONT_NUM, fill=COLOR_METER_TEXT)
+        self._length = self.create_text(140, 85, anchor=Tkinter.W, font=FONT_NUM, fill=COLOR_METER_TEXT)
+        self._cue = self.create_text(270, 85, anchor=Tkinter.W, font=FONT_NUM, fill=COLOR_METER_TEXT)
+        self._title = self.create_text(10, 20, anchor=Tkinter.W, font=FONT_HEAD, fill=COLOR_METER_TEXT)
+        self._artist = self.create_text(self._width, 20, anchor=Tkinter.E, font=FONT_HEAD, fill=COLOR_METER_TEXT)
 
-        # x0 y0 x1 y1
-        self._bar_bg = self.create_rectangle(self._x0, self._y0, self._x1, self._y1, fill="#008500", width=1)
-        self._bar_fg = self.create_rectangle(self._x0, self._y0, 0, self._y1, fill="#FF0000", width=1)
+        self._bar_bg = self.create_rectangle(self._x0, self._y0, self._x1, self._y1, fill=COLOR_BAR_BG)
+        self._bar_fg = self.create_rectangle(self._x0, self._y0, self._x0, self._y1, fill=COLOR_BAR_FG)
 
-    # TODO: implement end_callback, although it probably won't be used
+        self.reset()
+
     def _run(self):
         """Run the meter in a separate thread."""
         while self._is_playing:
-            # (position [ms], length [ms], title, artist)
             data = self._data_callback()
             if data is None:
                 data = (0, 0, "--", "--")
 
-            # if data[0] >= data[1]:
-            #     break
+            if data[0] >= data[1]:
+                break
 
             if data[1] is not 0:
                 value = (float)(data[0]) / (float)(data[1])
@@ -97,9 +101,6 @@ class Meter(Canvas):
 
             time.sleep(METER_INTERVAL)
 
-        # if self._end_callback is not None:
-        #     self._end_callback()
-
     def start(self):
         """Start the meter."""
         self._is_playing = True
@@ -108,9 +109,10 @@ class Meter(Canvas):
     def reset(self):
         """Reset the meter."""
         self._is_playing = False
+
         self.itemconfigure(self._position, text=get_fmt_time(0))
         self.itemconfigure(self._length, text=get_fmt_time(0))
         self.itemconfigure(self._cue, text=get_fmt_time(0))
         self.itemconfigure(self._title, text="--")
         self.itemconfigure(self._artist, text="--")
-        self.coords(self._bar_fg, 0, self._y0, 0, self._y1)
+        self.coords(self._bar_fg, self._x0, self._y0, self._x0, self._y1)
