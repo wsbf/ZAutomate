@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
+"""Test suite for the meter module."""
 import sys
 import time
 import thread
-sys.path.insert(0, 'app')
-
 from Tkinter import Frame, Canvas
+
+sys.path.insert(0, 'app')
 from meter import Meter
 
 NUM_COLS = 6

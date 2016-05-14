@@ -42,7 +42,7 @@ def save_show_id(show_id):
     """
     try:
         f = open(FILE_AUTOCONF, "w")
-        f.write((str)(show_id + 1))
+        f.write((str)(show_id))
         f.close()
     except IOError:
         print "Error: Could not save show ID to config file."
@@ -68,7 +68,8 @@ def get_cart(cart_type):
     types = {
         0: "PSA",
         1: "Underwriting",
-        2: "StationID"
+        2: "StationID",
+        3: "Promotion"
     }
     for t in types:
         if types[t] is cart_type:

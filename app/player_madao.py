@@ -71,9 +71,5 @@ class Player(object):
 
     def stop(self):
         """Stop the audio stream."""
-        if not self._is_playing:
-            print time.asctime() + " :=: Player_madao :: Tried to stop, but not playing"
-            return
-
         self._is_playing = False
         self._callback = None
