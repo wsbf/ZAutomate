@@ -1,10 +1,7 @@
-"""The cart_queue module provides the CartQueue class."""
+"""The cartqueue module provides the CartQueue class."""
 import datetime
 import time
 import database
-from meter import Meter
-
-METER_WIDTH = 800
 
 CART_TYPES = [
     'StationID',
@@ -73,22 +70,25 @@ class CartQueue(object):
     from the server-side API and inserts carts according
     to a configuration defined by AUTOMATION_CARTS.
     """
-
-    # TODO: move to Automation?
-    _meter = None
-
     _show_id = -1
     _queue = None
     _queue_played = None
-    _update_callback = None
-    _is_playing = False
 
-    def __init__(self, master, update_callback):
+    _is_playing = False
+    _on_cart_start = None
+    _on_cart_stop = None
+    _on_update = None
+
+    def __init__(self, on_cart_start, on_cart_stop, on_update):
         """Construct a cart queue.
 
-        :param master: master Frame used for the meter
-        :param update_callback: callback to update the UI
+        :param on_cart_start: callback for when a cart starts
+        :param on_cart_stop: callback for when a cart stops
+        :param on_update: callback for when the queue is updated
         """
+        self._on_update = on_update
+        self._on_cart_start = on_cart_start
+        self._on_cart_stop = on_cart_stop
 
         # get the saved show ID or a random new show ID
         self._show_id = database.restore_show_id()
@@ -98,11 +98,6 @@ class CartQueue(object):
         # initialize the queue
         self._queue = []
         self._queue_played = []
-        self._update_callback = update_callback
-
-        # initialize the meter
-        self._meter = Meter(master, METER_WIDTH, self._get_meter_data)
-        self._meter.grid(row=1, column=0, columnspan=4)
 
     def get_queue(self):
         """Get the queue."""
@@ -117,7 +112,7 @@ class CartQueue(object):
         print time.asctime() + " :=: CartQueue :: Enqueuing " + self._queue[0].cart_id
 
         self._queue[0].start(self.transition)
-        self._meter.start()
+        self._on_cart_start()
 
         database.log_cart(self._queue[0].cart_id)
 
@@ -128,7 +123,7 @@ class CartQueue(object):
 
             # stop the cart
             self._queue[0].stop()
-            self._meter.reset()
+            self._on_cart_stop()
 
             # move the cart to the played list
             self._queue_played.append(self._queue.pop(0))
@@ -255,7 +250,7 @@ class CartQueue(object):
         self._insert_carts()
         self._enqueue()
 
-        self._update_callback()
+        self._on_update()
 
     def stop_soft(self):
         """Stop the queue at the end of the current track."""
@@ -293,11 +288,4 @@ class CartQueue(object):
             print time.asctime() + " :=: CartQueue :: Removing all carts"
             self._remove_carts()
 
-        self._update_callback()
-
-    def _get_meter_data(self):
-        """Get meter data for the first track in the queue."""
-        if len(self._queue) > 0:
-            return self._queue[0].get_meter_data()
-        else:
-            return None
+        self._on_update()

@@ -3,14 +3,17 @@
 """The Automation module provides a GUI for radio automation."""
 import Tkinter
 from Tkinter import Label, StringVar, Button, Frame, Scrollbar, Listbox
-from cart_queue import CartQueue
+from cartqueue import CartQueue
+from meter import Meter
+
+METER_WIDTH = 800
 
 COLOR_BUTTON_STOPPED = "#008500"
 COLOR_BUTTON_PLAYING = "#FFFF00"
 COLOR_BUTTON_STOPPING = "#FF0000"
 
-FONT_TITLE = ('Helvetica', 36, 'bold italic')
-FONT = ('Helvetica', 12, 'bold')
+FONT_TITLE = ("Helvetica", 36, "bold italic")
+FONT = ("Helvetica", 12, "bold")
 
 TEXT_TITLE = "ZAutomate :: Automation"
 TEXT_BUTTON_STOPPED = "START"
@@ -27,10 +30,11 @@ class Automation(Frame):
     STATE_STOPPING = 3
 
     _state = None
-    _cart_queue = None
-
     _button_text = None
     _button = None
+
+    _meter = None
+    _cart_queue = None
 
     _list_time = None
     _list_track = None
@@ -54,6 +58,10 @@ class Automation(Frame):
         self._button.config(bd=2, bg=COLOR_BUTTON_STOPPED, highlightbackground=COLOR_BUTTON_STOPPED)
         self._button.grid(row=0, column=3)
 
+        # initialize the meter
+        self._meter = Meter(self.master, METER_WIDTH, self._get_meter_data)
+        self._meter.grid(row=1, column=0, columnspan=4)
+
         # initialize playlist view
         playlist = Frame(self.master, bd=2, relief=Tkinter.SUNKEN)
         Label(playlist, font=FONT, anchor=Tkinter.CENTER, width=16, text=TEXT_PLAYLIST_TIME).grid(row=0, column=0)
@@ -75,7 +83,7 @@ class Automation(Frame):
         playlist.grid(row=4, column=0, columnspan=4)
 
         # initialize cart queue
-        self._cart_queue = CartQueue(self.master, self._update_ui)
+        self._cart_queue = CartQueue(self._cart_start, self._cart_stop, self._update_ui)
         self._cart_queue.add_tracks()
         self._update_ui()
 
@@ -130,10 +138,18 @@ class Automation(Frame):
         self._button_text.set(TEXT_BUTTON_STOPPED)
         self._button.config(bg=COLOR_BUTTON_STOPPED, highlightbackground=COLOR_BUTTON_STOPPED)
 
+    def _cart_start(self):
+        """Start the meter when a cart starts."""
+        self._meter.start()
+
+    def _cart_stop(self):
+        """Reset the meter when a cart stops."""
+        self._meter.reset()
+
     def _update_ui(self):
         """Update the user interface.
 
-        This function is called at various times by the cart queue.
+        This function is called when the cart queue is updated.
         """
 
         # clear and reset the playlist
@@ -151,6 +167,15 @@ class Automation(Frame):
             self._state = self.STATE_STOPPED
             self._button_text.set(TEXT_BUTTON_STOPPED)
             self._button.config(bg=COLOR_BUTTON_STOPPED, highlightbackground=COLOR_BUTTON_STOPPED)
+
+    def _get_meter_data(self):
+        """Get meter data for the first track in the queue."""
+        queue = self._cart_queue.get_queue()
+
+        if len(queue) > 0:
+            return queue[0].get_meter_data()
+        else:
+            return None
 
     def destroy(self):
         """Destroy the Automation window."""
