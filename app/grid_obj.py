@@ -1,8 +1,8 @@
-"""The GridObj module provides the GridObj class."""
+"""The grid_obj module provides the GridObj class."""
 import time
 import Tkinter
 from Tkinter import Frame, Canvas
-import ZAutomate_DBInterface as database
+import database
 
 CART_WIDTH = 175
 CART_HEIGHT = 75

@@ -3,7 +3,7 @@
 """The Automation module provides a GUI for radio automation."""
 import Tkinter
 from Tkinter import Label, StringVar, Button, Frame, Scrollbar, Listbox
-from ZAutomate_CartQueue import CartQueue
+from cart_queue import CartQueue
 
 COLOR_BUTTON_STOPPED = "#008500"
 COLOR_BUTTON_PLAYING = "#FFFF00"

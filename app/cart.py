@@ -1,4 +1,4 @@
-"""The Cart module provides the Cart class.
+"""The cart module provides the Cart class.
 
 Currently, carts and tracks are both represented by the "Cart"
 class, but it may be better to have separate classes.
@@ -8,7 +8,7 @@ are three different implementations of the Player class, and Cart currently
 uses madao.
 """
 import time
-from ZAutomate_Player_madao import Player
+from player_madao import Player
 
 class Cart(object):
     """The Cart class contains the metadata and audio stream of a cart."""

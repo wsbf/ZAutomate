@@ -4,10 +4,10 @@
 import thread
 import Tkinter
 from Tkinter import Frame, Label, BooleanVar, Checkbutton, Entry, Button
-import ZAutomate_DBInterface as database
-from ZAutomate_DualBox import DualBox
-from ZAutomate_GridObj import GridObj
-from ZAutomate_Meter import Meter
+import database
+from dualbox import DualBox
+from grid_obj import GridObj
+from meter import Meter
 
 METER_WIDTH = 1000
 GRID_ROWS = 5

@@ -14,7 +14,7 @@ git clone https://github.com/wsbf/ZAutomate.git
 ## Development
 
 ```
-pylint **/*.py > lint.out
+pylint **/*.py > lint.log
 ```
 
 ## TODO

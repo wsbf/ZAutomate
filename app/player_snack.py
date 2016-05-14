@@ -1,4 +1,4 @@
-"""The Player_snack module provides the Player class.
+"""The player_snack module provides the Player class.
 
 This implementation of Player uses the tkSnack module to access the
 audio stream. However, I have not been able to use it because the

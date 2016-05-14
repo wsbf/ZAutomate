@@ -4,9 +4,9 @@
 import random
 import Tkinter
 from Tkinter import Frame, Label, Button
-import ZAutomate_DBInterface as database
-from ZAutomate_GridObj import GridObj
-from ZAutomate_Meter import Meter
+import database
+from grid_obj import GridObj
+from meter import Meter
 
 METER_WIDTH = 1000
 GRID_ROWS = 8

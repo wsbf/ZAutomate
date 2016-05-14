@@ -2,7 +2,7 @@
 ### pure tcl: http://www.tcl.tk/man/tcl8.4/TkCmd/listbox.htm#M24
 ### fix dual highlight: http://www.internetcomputerforum.com/python-forum/311559-tkinter-selecting-one-item-each-two-listboxes.html
 
-"""The DualBox module provides the DualBox class."""
+"""The dualbox module provides the DualBox class."""
 import Tkinter
 from Tkinter import Frame, Scrollbar, Label, Listbox
 

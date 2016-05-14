@@ -1,5 +1,5 @@
 *.pyc
 sid.conf
 
-lint.out
-test/test.mp3
+*.log
+*.mp3

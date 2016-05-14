@@ -1,8 +1,8 @@
-"""The CartQueue module provides the CartQueue class."""
+"""The cart_queue module provides the CartQueue class."""
 import datetime
 import time
-import ZAutomate_DBInterface as database
-from ZAutomate_Meter import Meter
+import database
+from meter import Meter
 
 METER_WIDTH = 800
 

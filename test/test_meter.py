@@ -6,7 +6,7 @@ import thread
 sys.path.insert(0, 'app')
 
 from Tkinter import Frame, Canvas
-from ZAutomate_Meter import Meter
+from meter import Meter
 
 NUM_COLS = 6
 CART_WIDTH = 200

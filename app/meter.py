@@ -1,4 +1,4 @@
-"""The Meter module provides the Meter class."""
+"""The meter module provides the Meter class."""
 import thread
 import time
 import Tkinter

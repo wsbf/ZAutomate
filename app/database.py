@@ -2,7 +2,7 @@
 import os
 import time
 import requests
-from ZAutomate_Cart import Cart
+from cart import Cart
 
 LIBRARY_PREFIX = "/media/ZAL/"
 
