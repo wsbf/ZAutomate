@@ -6,7 +6,7 @@ import Tkinter
 from Tkinter import Frame, Label, BooleanVar, Checkbutton, Entry, Button
 import database
 from dualbox import DualBox
-from grid_obj import GridObj
+from cartgrid import Grid
 from meter import Meter
 
 METER_WIDTH = 1000
@@ -21,15 +21,36 @@ TEXT_AUTOSLOT = "Auto-queue tracks"
 TEXT_SEARCHBOX = "Search Box"
 TEXT_SEARCH = "Search"
 
+def get_next_key(rows, cols, key):
+    """Get the next cell to queue after a cell.
+
+    - each cell queues the cell below
+    - bottom cells queue the top cell in the next column
+    - the bottom right cell queues the top left cell
+
+    :param rows
+    :param cols
+    :param key
+    """
+    next_row = (int)(key[0])
+    next_col = (int)(key[2])
+
+    if next_row is rows:
+        if next_col is cols:
+            next_row = 1
+            next_col = 1
+        else:
+            next_row = 1
+            next_col += 1
+    else:
+        next_row += 1
+
+    return (str)(next_row) + "x" + (str)(next_col)
+
 class Studio(Frame):
     """The Studio class is a GUI for the digital library."""
     _meter = None
-
-    _rows = GRID_ROWS
-    _cols = GRID_COLS
     _grid = None
-    _active_grid_obj = None
-
     _dual_box = None
     _auto_queue = None
     _entry = None
@@ -42,8 +63,8 @@ class Studio(Frame):
 
         # make the window resizable
         top = self.master.winfo_toplevel()
-        for row in range(2, self._rows + 2):
-            for col in range(0, self._cols):
+        for row in range(2, GRID_ROWS + 2):
+            for col in range(0, GRID_COLS):
                 top.rowconfigure(row, weight=1)
                 top.columnconfigure(col, weight=1)
                 self.rowconfigure(row, weight=1)
@@ -51,43 +72,18 @@ class Studio(Frame):
 
         # initialize the title
         title = Label(self.master, fg='#000', font=FONT_TITLE, text=TEXT_TITLE)
-        title.grid(row=0, column=0, columnspan=self._cols)
+        title.grid(row=0, column=0, columnspan=GRID_COLS)
 
         # initialize the meter
         self._meter = Meter(self.master, METER_WIDTH, self._get_meter_data)
-        self._meter.grid(row=1, column=0, columnspan=self._cols)
+        self._meter.grid(row=1, column=0, columnspan=GRID_COLS)
 
         # initialize the cart grid
-        self._grid = {}
-
-        for row in range(1, self._rows + 1):
-            for col in range(1, self._cols + 1):
-                key = (str)(row) + "x" + (str)(col)
-
-                next_row = row
-                next_col = col
-
-                # each cell cues the cell below,
-                # bottom cells cue the top cell in the next column,
-                # the bottom right cell cues the top left cell
-                if next_row is self._rows:
-                    if next_col is self._cols:
-                        next_row = 1
-                        next_col = 1
-                    else:
-                        next_row = 1
-                        next_col += 1
-                else:
-                    next_row += 1
-
-                next_key = (str)(next_row) + "x" + (str)(next_col)
-
-                self._grid[key] = GridObj(self, self._end_callback, True, next_key)
-                self._grid[key].grid(row=row + 1, column=col - 1)
+        self._grid = Grid(self, GRID_ROWS, GRID_COLS, True, self._cart_start, self._cart_stop, self._cart_end, self.add_cart)
 
         # initialize the dual box
         self._dual_box = DualBox(self)
-        self._dual_box.grid(row=self._rows + 2, column=0, columnspan=4)
+        self._dual_box.grid(row=GRID_ROWS + 2, column=0, columnspan=4)
 
         # intialize the auto-queue control
         self._auto_queue = BooleanVar()
@@ -96,18 +92,18 @@ class Studio(Frame):
         control = Frame(self.master, bd=2, relief=Tkinter.SUNKEN)
 
         Checkbutton(control, text=TEXT_AUTOSLOT, variable=self._auto_queue, onvalue=True, offvalue=False).pack(anchor=Tkinter.NW)
-        control.grid(row=self._rows + 2, column=4, columnspan=self._cols - 4)
+        control.grid(row=GRID_ROWS + 2, column=4, columnspan=GRID_COLS - 4)
 
         # initialize the search box, button
         Label(control, font=FONT, fg='#000', text=TEXT_SEARCHBOX).pack(anchor=Tkinter.NW)
         self._entry = Entry(control, takefocus=True, width=45, bg='#000', fg='#33CCCC')
         self._entry.bind('<Return>', self.search)
-        # self._entry.grid(row=self._rows + 3, column=0, columnspan=5)
+        # self._entry.grid(row=GRID_ROWS + 3, column=0, columnspan=5)
         self._entry.pack(anchor=Tkinter.NW)
         self._entry.focus_set()
 
         button = Button(control, text=TEXT_SEARCH, command=self.search)
-        # button.grid(row=self._rows + 3, column=5)
+        # button.grid(row=GRID_ROWS + 3, column=5)
         button.pack(anchor=Tkinter.S)
 
         # begin the event loop
@@ -142,29 +138,38 @@ class Studio(Frame):
         if index is not None:
             self._selected_cart = self._search_results[index]
 
-    def is_playing(self):
-        """Get whether a cart is currently playing."""
-        return self._active_grid_obj is not None
+    def add_cart(self, key):
+        """Add the selected cart to the grid.
 
-    def set_active_grid_obj(self, grid_obj):
-        """Set the active grid object.
-
-        :param grid_obj
+        :param key
         """
-        self._active_grid_obj = grid_obj
+        if not self._grid.has_cart(key) and self._selected_cart is not None:
+            self._grid.set_cart(key, self._selected_cart)
+
+    def _cart_start(self):
+        """Start the meter when a cart starts."""
+        self._meter.start()
+
+    def _cart_stop(self):
+        """Reset the meter when a cart stops."""
+        self._meter.reset()
+
+    def _cart_end(self, key):
+        """Reset the meter when a cart ends.
+
+        Also, if auto-queue is enabled, queue the next cart.
+
+        :param key
+        """
+        self._meter.reset()
+
+        if self._auto_queue.get():
+            next_key = get_next_key(GRID_ROWS, GRID_COLS, key)
+            if self._grid.has_cart(next_key):
+                self._grid.start(next_key)
 
     def _get_meter_data(self):
-        """Get meter data for the current cart."""
-        if self._active_grid_obj is not None:
-            return self._active_grid_obj.get_cart().get_meter_data()
-        else:
-            return None
-
-    def _end_callback(self):
-        """Reset the active grid object.
-
-        This function is called whenever a cart finishes.
-        """
-        self._active_grid_obj.reset(self._auto_queue.get())
+        """Get meter data for the currently active cart."""
+        return self._grid.get_active_cell().get_cart().get_meter_data()
 
 Studio()

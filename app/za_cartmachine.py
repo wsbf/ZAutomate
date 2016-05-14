@@ -5,7 +5,7 @@ import random
 import Tkinter
 from Tkinter import Frame, Label, Button
 import database
-from grid_obj import GridObj
+from cartgrid import Grid
 from meter import Meter
 
 METER_WIDTH = 1000
@@ -47,7 +47,7 @@ COLOR_RELOAD_FG = "#000000"
 TEXT_TITLE = "ZAutomate :: Cart Machine"
 TEXT_RELOAD = "Reload"
 
-def progression_radius(ROWS, COLS, corner, radius):
+def progression_radius(rows, cols, corner, radius):
     """Generate a progression of coordinates at a given radius from a corner.
 
     Examples:
@@ -55,8 +55,8 @@ def progression_radius(ROWS, COLS, corner, radius):
     - radius = 1 yields the 3 coordinates around the corner
     - radius = 2 yields the 5 coordinates around the previous 3, etc
 
-    :param ROWS: rows in the grid
-    :param COLS: columns in the grid
+    :param rows: rows in the grid
+    :param cols: columns in the grid
     :param corner: corner coordinate as a 2-tuple (row, col)
     :param radius: number of diagonal cells from corner
     """
@@ -64,12 +64,12 @@ def progression_radius(ROWS, COLS, corner, radius):
     # determine the directions from the corner
     if corner[0] == 1:
         dirR = 1
-    elif corner[0] == ROWS:
+    elif corner[0] == rows:
         dirR = -1
 
     if corner[1] == 1:
         dirC = 1
-    elif corner[1] == COLS:
+    elif corner[1] == cols:
         dirC = -1
 
     # determine the pivot from the corner and radius
@@ -89,26 +89,26 @@ def progression_radius(ROWS, COLS, corner, radius):
     array.append(pivot)
 
     # filter valid coordinates
-    array = [elem for elem in array if 0 < elem[0] <= ROWS and 0 < elem[1] <= COLS]
+    array = [elem for elem in array if 0 < elem[0] <= rows and 0 < elem[1] <= cols]
 
     return array
 
-def progression(ROWS, COLS, corner):
+def progression(rows, cols, corner):
     """Generate a progression of coordinates from a corner.
 
     The progression begins at the corner and expands outward
     until every coordinate in the grid is included.
 
-    :param ROWS: rows in the grid
-    :param COLS: columns in the grid
+    :param rows: rows in the grid
+    :param cols: columns in the grid
     :param corner: corner coordinate as a 2-tuple (row, col)
     """
 
     # append each radius of the progression
     array = []
 
-    for radius in range(0, max(ROWS, COLS)):
-        array.extend(progression_radius(ROWS, COLS, corner, radius))
+    for radius in range(0, max(rows, cols)):
+        array.extend(progression_radius(rows, cols, corner, radius))
 
     # temporary code to transform tuples into strings
     array = [(str)(elem[0])+"x"+(str)(elem[1]) for elem in array]
@@ -118,11 +118,7 @@ def progression(ROWS, COLS, corner):
 class CartMachine(Frame):
     """The CartMachine class is a GUI that provides a grid of carts."""
     _meter = None
-
-    _rows = GRID_ROWS
-    _cols = GRID_COLS
     _grid = None
-    _active_grid_obj = None
 
     def __init__(self):
         """Construct a CartMachine window."""
@@ -130,8 +126,8 @@ class CartMachine(Frame):
 
         # make the window resizable
         top = self.winfo_toplevel()
-        for row in range(2, self._rows + 2):
-            for col in range(0, self._cols):
+        for row in range(2, GRID_ROWS + 2):
+            for col in range(0, GRID_COLS):
                 top.rowconfigure(row, weight=1)
                 top.columnconfigure(col, weight=1)
                 self.rowconfigure(row, weight=1)
@@ -141,28 +137,22 @@ class CartMachine(Frame):
         title = Label(self.master, \
             bg=COLOR_TITLE_BG, fg=COLOR_TITLE_FG, \
             font=FONT_TITLE, text=TEXT_TITLE)
-        title.grid(row=0, column=0, columnspan=self._cols - 1, sticky=Tkinter.N)
+        title.grid(row=0, column=0, columnspan=GRID_COLS - 1, sticky=Tkinter.N)
 
         # initialize the reload button
         reload_button = Button(self.master, \
             bg=COLOR_RELOAD_BG, fg=COLOR_RELOAD_FG, \
             font=FONT_RELOAD, text=TEXT_RELOAD, \
             command=self.reload)
-        reload_button.grid(row=0, column=self._cols - 1)
+        reload_button.grid(row=0, column=GRID_COLS - 1)
 
         # initialize the meter
         self._meter = Meter(self.master, METER_WIDTH, self._get_meter_data)
-        self._meter.grid(row=1, column=0, columnspan=self._cols)
+        self._meter.grid(row=1, column=0, columnspan=GRID_COLS)
         # self._meter.grid_propagate(0)
 
         # initialize the grid
-        self._grid = {}
-        for row in range(1, self._rows + 1):
-            for col in range(1, self._cols + 1):
-                key = (str)(row) + "x" + (str)(col)
-                self._grid[key] = GridObj(self, self._end_callback, False)
-                self._grid[key].grid(row=row + 1, column=col - 1)
-
+        self._grid = Grid(self, GRID_ROWS, GRID_COLS, False, self._cart_start, self._cart_stop, self._cart_end, None)
         self._load()
 
         # begin the event loop
@@ -185,7 +175,7 @@ class CartMachine(Frame):
         # generate a progression of cells for each corner
         progs = {}
         for cart_type in CONFIG_CARTS:
-            progs[cart_type] = progression(self._rows, self._cols, CONFIG_CARTS[cart_type]["corner"])
+            progs[cart_type] = progression(GRID_ROWS, GRID_COLS, CONFIG_CARTS[cart_type]["corner"])
 
         # get a dictonary of carts for each cart type
         carts = database.get_carts()
@@ -201,7 +191,7 @@ class CartMachine(Frame):
         # insert carts until the grid is full or all carts are inserted
         num_inserted = 0
 
-        for i in range(0, max(self._rows, self._cols)):
+        for i in range(0, max(GRID_ROWS, GRID_COLS)):
             for cart_type in carts:
                 # insert a layer for each cart type
                 num_toinsert = 1 + 2 * i
@@ -209,16 +199,16 @@ class CartMachine(Frame):
                 while len(carts[cart_type]) > 0 and num_toinsert > 0:
                     # pop the first empty coordinate from the progression
                     key = progs[cart_type].pop(0)
-                    while self._grid[key].has_cart():
+                    while self._grid.has_cart(key):
                         key = progs[cart_type].pop(0)
 
                     # add the cart to the grid
-                    self._grid[key].set_cart(carts[cart_type].pop(0))
+                    self._grid.set_cart(key, carts[cart_type].pop(0))
                     num_inserted += 1
                     num_toinsert -= 1
 
                     # exit if the grid is full
-                    if num_inserted is self._rows * self._cols:
+                    if num_inserted is GRID_ROWS * GRID_COLS:
                         return
 
                 # exit if all carts are inserted
@@ -228,39 +218,28 @@ class CartMachine(Frame):
     def reload(self):
         """Reload the cart machine."""
 
-        if self._active_grid_obj is not None:
+        if self._grid.is_playing():
             return
 
         print "Reloading the Cart Machine..."
-        for key in self._grid.keys():
-            self._grid[key].remove_cart()
-
+        self._grid.clear()
         self._load()
         print "Cart Machine reloaded."
 
-    def is_playing(self):
-        """Get whether a cart is currently playing."""
-        return self._active_grid_obj is not None
+    def _cart_start(self):
+        """Start the meter when a cart starts."""
+        self._meter.start()
 
-    def set_active_grid_obj(self, grid_obj):
-        """Set the active grid object.
+    def _cart_stop(self):
+        """Reset the meter when a cart stops."""
+        self._meter.reset()
 
-        :param grid_obj
-        """
-        self._active_grid_obj = grid_obj
+    def _cart_end(self, key):
+        """Reset the meter when a cart ends."""
+        self._meter.reset()
 
     def _get_meter_data(self):
-        """Get meter data for the current cart."""
-        if self._active_grid_obj is not None:
-            return self._active_grid_obj.get_cart().get_meter_data()
-        else:
-            return None
-
-    def _end_callback(self):
-        """Reset the active grid object.
-
-        This function is called whenever a cart finishes.
-        """
-        self._active_grid_obj.reset()
+        """Get meter data for the currently active cart."""
+        return self._grid.get_active_cell().get_cart().get_meter_data()
 
 CartMachine()
