@@ -1,5 +1,4 @@
 """The database module provides a collection of functions for the server API."""
-import os
 import time
 import requests
 from cart import Cart
@@ -13,8 +12,6 @@ URL_AUTOCART = "https://dev.wsbf.net/api/zautomate/automation_add_carts.php"
 URL_STUDIOSEARCH = "https://dev.wsbf.net/api/zautomate/studio_search.php"
 URL_LOG = "https://dev.wsbf.net/api/zautomate/zautomate_log.php"
 
-FILE_AUTOCONF = "sid.conf"
-
 def get_new_show_id(show_id):
     """Get a new show ID for queueing playlists.
 
@@ -26,37 +23,6 @@ def get_new_show_id(show_id):
     except requests.exceptions.ConnectionError:
         print "Error: Could not fetch starting show ID."
         return -1
-
-def save_show_id(show_id):
-    """Save a show ID to the config file.
-
-    When Automation exits for any reason, it saves the current show ID
-    in the cart queue so that when Automation is restarted, it can pull
-    from the same playlist and thereby maintain continuity. However, in
-    such a scenario the cart queue might play tracks twice if it played
-    them before an exit, because the cart queue does not check tracks
-    against the logbook. Therefore, either this feature should be scrapped
-    or the cart queue should employ more rigorous checking for duplicates.
-
-    :param show_id
-    """
-    try:
-        f = open(FILE_AUTOCONF, "w")
-        f.write((str)(show_id))
-        f.close()
-    except IOError:
-        print "Error: Could not save show ID to config file."
-
-def restore_show_id():
-    """Attempt to read the show ID that was saved to the config file."""
-    if os.access(FILE_AUTOCONF, os.R_OK) is True:
-        f = open(FILE_AUTOCONF, "r")
-        show_id = f.read()
-
-        if show_id.isdigit():
-            return (int)(show_id)
-
-    return -1
 
 def get_cart(cart_type):
     """Get a random cart of a given type.

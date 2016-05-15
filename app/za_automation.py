@@ -177,8 +177,4 @@ class Automation(Frame):
         else:
             return None
 
-    def destroy(self):
-        """Destroy the Automation window."""
-        self._cart_queue.save()
-
 Automation()

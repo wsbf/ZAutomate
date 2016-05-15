@@ -7,9 +7,6 @@ sys.path.insert(0, 'app')
 import database
 
 print database.get_new_show_id(-1)
-print database.save_show_id(25608)
-print database.restore_show_id()
-
 print database.get_cart("PSA")
 print database.get_cart("Underwriting")
 print database.get_cart("StationID")

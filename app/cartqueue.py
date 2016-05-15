@@ -90,22 +90,13 @@ class CartQueue(object):
         self._on_cart_start = on_cart_start
         self._on_cart_stop = on_cart_stop
 
-        # get the saved show ID or a random new show ID
-        self._show_id = database.restore_show_id()
-        if self._show_id is -1:
-            self._show_id = database.get_new_show_id(-1)
-
-        # initialize the queue
+        self._show_id = database.get_new_show_id(-1)
         self._queue = []
         self._queue_played = []
 
     def get_queue(self):
         """Get the queue."""
         return self._queue
-
-    def save(self):
-        """Save the current show ID to a file."""
-        database.save_show_id(self._show_id)
 
     def _enqueue(self):
         """Start the first track in the queue."""
