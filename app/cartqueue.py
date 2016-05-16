@@ -3,14 +3,15 @@ import datetime
 import time
 import database
 
+# temporary array used to filter carts from the cart queue
 CART_TYPES = [
     'StationID',
     'PSA',
     'Underwriting'
 ]
 
-### Configuration for when to play carts. The current configuration
-### fulfills the current rules established by the FCC and WSBF:
+### Configuration for when to play carts. The configuration must
+### at least fulfill the rules established by the FCC and WSBF:
 ### - 1 StationID at the top of every hour, +/- 5 minutes
 ### - 2 PSAs each hour
 ### - 1 Underwriting each hour
@@ -66,33 +67,37 @@ def is_artist_is_list(cart, array):
 class CartQueue(object):
     """The CartQueue class is a queue that generates radio content.
 
-    To generate content, the cart queue selects random playlists
-    from the server-side API and inserts carts according
-    to a configuration defined by AUTOMATION_CARTS.
+    The behavior of the cart queue is as follows:
+    1. enqueue a playlist from the database
+    2. insert carts according to configuration
+    3. start and log the first track
+    4. [track plays to completion]
+    5. move the first track to the played list
+    6. enqueue another playlist if the queue is not sufficiently long
+        - also empty the played list (?)
+    7. insert carts if there are no carts in the queue
+    8. GOTO 3 (start the next track)
     """
     _show_id = -1
     _queue = None
-    _queue_played = None
+    _played = None
 
     _is_playing = False
     _on_cart_start = None
     _on_cart_stop = None
-    _on_update = None
 
-    def __init__(self, on_cart_start, on_cart_stop, on_update):
+    def __init__(self, on_cart_start, on_cart_stop):
         """Construct a cart queue.
 
         :param on_cart_start: callback for when a cart starts
         :param on_cart_stop: callback for when a cart stops
-        :param on_update: callback for when the queue is updated
         """
-        self._on_update = on_update
         self._on_cart_start = on_cart_start
         self._on_cart_stop = on_cart_stop
 
         self._show_id = database.get_new_show_id(-1)
         self._queue = []
-        self._queue_played = []
+        self._played = []
 
     def get_queue(self):
         """Get the queue."""
@@ -109,15 +114,11 @@ class CartQueue(object):
 
     def _dequeue(self):
         """Stop and dequeue the first track in the queue."""
-        if len(self._queue) > 0:
-            print time.asctime() + " :=: CartQueue :: Dequeuing " + self._queue[0].cart_id
+        print time.asctime() + " :=: CartQueue :: Dequeuing " + self._queue[0].cart_id
 
-            # stop the cart
-            self._queue[0].stop()
-            self._on_cart_stop()
-
-            # move the cart to the played list
-            self._queue_played.append(self._queue.pop(0))
+        self._queue[0].stop()
+        self._on_cart_stop()
+        self._played.append(self._queue.pop(0))
 
     def _gen_start_times(self, begin_index=0):
         """Set the start time of each item in the queue.
@@ -137,6 +138,7 @@ class CartQueue(object):
 
             self._queue[i].start_time = start_time
 
+    # TODO: make the server API return a playlist of sufficient size
     def add_tracks(self):
         """Append tracks to the queue.
 
@@ -153,10 +155,14 @@ class CartQueue(object):
         while len(self._queue) < PLAYLIST_MIN_LENGTH:
             # retrieve playlist from database
             self._show_id = database.get_new_show_id(self._show_id)
+
+            if self._show_id is -1:
+                time.sleep(1.0)
+
             playlist = database.get_playlist(self._show_id)
 
             # add each track whose artist isn't already in the queue or played list
-            self._queue.extend([t for t in playlist if not is_artist_is_list(t, self._queue_played) and not is_artist_is_list(t, self._queue)])
+            self._queue.extend([t for t in playlist if not is_artist_is_list(t, self._played) and not is_artist_is_list(t, self._queue)])
 
             print time.asctime() + " :=: CartQueue :: Added tracks, length is " + (str)(len(self._queue))
 
@@ -201,7 +207,7 @@ class CartQueue(object):
         min_index = -1
         min_delta = None
 
-        for i in range(0, len(self._queue)):
+        for i in range(1, len(self._queue)):
             delta = abs(target - self._queue[i].start_time)
 
             if min_delta is None or delta < min_delta:
@@ -241,8 +247,6 @@ class CartQueue(object):
         self._insert_carts()
         self._enqueue()
 
-        self._on_update()
-
     def stop_soft(self):
         """Stop the queue at the end of the current track."""
         self._is_playing = False
@@ -258,9 +262,9 @@ class CartQueue(object):
 
         # refill the queue if it is too short
         if len(self._queue) < PLAYLIST_MIN_LENGTH:
-            print time.asctime() + " :=: CartQueue :: Refilling the playlist"
+            print time.asctime() + " :=: CartQueue :: Refilling tracks"
             self.add_tracks()
-            self._queue_played = []
+            self._played = []
             self._remove_carts()
             self._insert_carts()
 
@@ -278,5 +282,3 @@ class CartQueue(object):
             # remove all carts if the queue was stopped
             print time.asctime() + " :=: CartQueue :: Removing all carts"
             self._remove_carts()
-
-        self._on_update()

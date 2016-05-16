@@ -23,7 +23,7 @@ class DualBox(Frame):
         self._select_callback = parent.select_cart
 
         # make scroll bar
-        scroll_bar = Scrollbar(self, orient="vertical", command=self.onvsb)
+        scroll_bar = Scrollbar(self, orient="vertical", command=self._scroll_bar)
 
         label1 = Label(self, text='Track', bg='#33CCCC', fg='#000')
         label2 = Label(self, text='Artist', bg='#33CCCC', fg='#000')
@@ -41,8 +41,8 @@ class DualBox(Frame):
         label2.pack(side='left', fill='x', expand=True)
 
         # mouse wheel binding
-        self._list_box1.bind("<MouseWheel>", self.onmousewheel)
-        self._list_box2.bind("<MouseWheel>", self.onmousewheel)
+        self._list_box1.bind("<MouseWheel>", self._scroll_wheel)
+        self._list_box2.bind("<MouseWheel>", self._scroll_wheel)
 
         # onclick binding?
         self._list_box1.bind("<<ListboxSelect>>", self.select)
@@ -101,13 +101,19 @@ class DualBox(Frame):
 
         self._select_callback(index)
 
-    # scroll handler
-    def onvsb(self, *args):
+    def _scroll_bar(self, *args):
+        """Scroll the list boxes with the vertical scroll bar.
+
+        :param args
+        """
         self._list_box1.yview(*args)
         self._list_box2.yview(*args)
 
-    # wheel handler
-    def onmousewheel(self, event):
+    def _scroll_wheel(self, event):
+        """Scroll the list boxes with the mouse wheel.
+
+        :param event
+        """
         self._list_box1.yview("scroll", event.delta, "units")
         self._list_box2.yview("scroll", event.delta, "units")
         # this prevents default bindings from firing, which

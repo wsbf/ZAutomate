@@ -47,15 +47,15 @@ def get_cart(cart_type):
         while count < 5:
             # fetch a random cart
             res = requests.get(URL_AUTOCART, params={"type": cart_type})
-            c = res.json()
+            cart_res = res.json()
 
             # return if cart type is empty
-            if c is None:
+            if cart_res is None:
                 return None
 
             # construct cart
-            filename = LIBRARY_PREFIX + "carts/" + c["filename"]
-            cart = Cart(c["cartID"], c["title"], c["issuer"], c["type"], filename)
+            filename = LIBRARY_PREFIX + "carts/" + cart_res["filename"]
+            cart = Cart(cart_res["cartID"], cart_res["title"], cart_res["issuer"], cart_res["type"], filename)
 
             # verify cart filename
             if cart.is_playable():
@@ -78,12 +78,12 @@ def get_playlist(show_id):
         res = requests.get(URL_AUTOLOAD, params={"showid": show_id})
         show_res = res.json()
 
-        for t in show_res["playlist"]:
+        for track_res in show_res["playlist"]:
             # TODO: move pathname building to Track constructor
-            filename = LIBRARY_PREFIX + t["file_name"]
-            track_id = t["lb_album_code"] + "-" + t["lb_track_num"]
+            filename = LIBRARY_PREFIX + track_res["file_name"]
+            track_id = track_res["lb_album_code"] + "-" + track_res["lb_track_num"]
 
-            track = Cart(track_id, t["lb_track_name"], t["artist_name"], t["rotation"], filename)
+            track = Cart(track_id, track_res["lb_track_name"], track_res["artist_name"], track_res["rotation"], filename)
 
             if track.is_playable():
                 playlist.append(track)
@@ -102,18 +102,18 @@ def get_carts():
     }
 
     try:
-        for t in carts:
-            res = requests.get(URL_CARTLOAD, params={"type": t})
+        for cart_type in carts:
+            res = requests.get(URL_CARTLOAD, params={"type": cart_type})
             carts_res = res.json()
 
-            for c in carts_res:
+            for cart_res in carts_res:
                 # TODO: move pathname building to Cart constructor
-                filename = LIBRARY_PREFIX + "carts/" + c["filename"]
+                filename = LIBRARY_PREFIX + "carts/" + cart_res["filename"]
 
-                cart = Cart(c["cartID"], c["title"], c["issuer"], c["type"], filename)
+                cart = Cart(cart_res["cartID"], cart_res["title"], cart_res["issuer"], cart_res["type"], filename)
 
                 if cart.is_playable():
-                    carts[t].append(cart)
+                    carts[cart_type].append(cart)
 
     except requests.exceptions.ConnectionError:
         print time.asctime() + " :=: Error: Could not fetch carts."
@@ -131,18 +131,18 @@ def search_library(query):
         res = requests.get(URL_STUDIOSEARCH, params={"query": query})
         results_res = res.json()
 
-        for c in results_res["carts"]:
-            filename = LIBRARY_PREFIX + "carts/" + c["filename"]
+        for cart_res in results_res["carts"]:
+            filename = LIBRARY_PREFIX + "carts/" + cart_res["filename"]
 
-            cart = Cart(c["cartID"], c["title"], c["issuer"], c["type"], filename)
+            cart = Cart(cart_res["cartID"], cart_res["title"], cart_res["issuer"], cart_res["type"], filename)
             if cart.is_playable():
                 results.append(cart)
 
-        for t in results_res["tracks"]:
-            filename = LIBRARY_PREFIX + t["file_name"]
-            track_id = t["album_code"] + "-" + t["track_num"]
+        for track_res in results_res["tracks"]:
+            filename = LIBRARY_PREFIX + track_res["file_name"]
+            track_id = track_res["album_code"] + "-" + track_res["track_num"]
 
-            track = Cart(track_id, t["track_name"], t["artist_name"], t["rotation"], filename)
+            track = Cart(track_id, track_res["track_name"], track_res["artist_name"], track_res["rotation"], filename)
             if track.is_playable():
                 results.append(track)
     except requests.exceptions.ConnectionError:

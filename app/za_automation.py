@@ -8,27 +8,31 @@ from meter import Meter
 
 METER_WIDTH = 800
 
-COLOR_BUTTON_STOPPED = "#008500"
-COLOR_BUTTON_PLAYING = "#FFFF00"
-COLOR_BUTTON_STOPPING = "#FF0000"
+STATE_STOPPED = 0
+STATE_PLAYING = 1
+STATE_STOPPING = 2
+
+COLOR_BUTTON = {
+    STATE_STOPPED: "#008500",
+    STATE_PLAYING: "#FFFF00",
+    STATE_STOPPING: "#FF0000"
+}
 
 FONT_TITLE = ("Helvetica", 36, "bold italic")
 FONT = ("Helvetica", 12, "bold")
 
 TEXT_TITLE = "ZAutomate :: Automation"
-TEXT_BUTTON_STOPPED = "START"
-TEXT_BUTTON_PLAYING = "STOP"
-TEXT_BUTTON_STOPPING = "STOP NOW"
+TEXT_BUTTON = {
+    STATE_STOPPED: "START",
+    STATE_PLAYING: "STOP",
+    STATE_STOPPING: "STOP NOW"
+}
 TEXT_PLAYLIST_TIME = "Start Time"
 TEXT_PLAYLIST_TRACK = "Track"
 TEXT_PLAYLIST_ARTIST = "Artist"
 
 class Automation(Frame):
     """The Automation class is a GUI that provides radio automation."""
-    STATE_STOPPED = 1
-    STATE_PLAYING = 2
-    STATE_STOPPING = 3
-
     _state = None
     _button_text = None
     _button = None
@@ -49,13 +53,12 @@ class Automation(Frame):
         title.grid(row=0, column=0, columnspan=3)
 
         # initialize button and state
-        self._state = self.STATE_STOPPED
+        self._state = STATE_STOPPED
 
         self._button_text = StringVar()
-        self._button_text.set(TEXT_BUTTON_STOPPED)
 
         self._button = Button(self.master, textvariable=self._button_text, command=self._update_state, width=16, height=2)
-        self._button.config(bd=2, bg=COLOR_BUTTON_STOPPED, highlightbackground=COLOR_BUTTON_STOPPED)
+        self._button.config(bd=2)
         self._button.grid(row=0, column=3)
 
         # initialize the meter
@@ -83,7 +86,7 @@ class Automation(Frame):
         playlist.grid(row=4, column=0, columnspan=4)
 
         # initialize cart queue
-        self._cart_queue = CartQueue(self._cart_start, self._cart_stop, self._update_ui)
+        self._cart_queue = CartQueue(self._cart_start, self._cart_stop)
         self._cart_queue.add_tracks()
         self._update_ui()
 
@@ -107,52 +110,41 @@ class Automation(Frame):
         The state machine is as follows:
         STATE_STOPPED -> STATE_PLAYING -> STATE_STOPPING -> STATE_STOPPED
         """
-        if self._state is self.STATE_STOPPED:
-            self.start()
-        elif self._state is self.STATE_PLAYING:
-            self.stop_soft()
-        elif self._state is self.STATE_STOPPING:
-            self.stop_hard()
-
-    def start(self):
-        """Start Automation."""
-        print "Starting Automation..."
-        self._cart_queue.start()
-        self._state = self.STATE_PLAYING
-        self._button_text.set(TEXT_BUTTON_PLAYING)
-        self._button.config(bg=COLOR_BUTTON_PLAYING, highlightbackground=COLOR_BUTTON_PLAYING)
-
-    def stop_soft(self):
-        """Stop Automation at the end of the current track."""
-        print "Stopping Automation after this track..."
-        self._cart_queue.stop_soft()
-        self._state = self.STATE_STOPPING
-        self._button_text.set(TEXT_BUTTON_STOPPING)
-        self._button.config(bg=COLOR_BUTTON_STOPPING, highlightbackground=COLOR_BUTTON_STOPPING)
-
-    def stop_hard(self):
-        """Stop Automation immediately."""
-        print "Stopping Automation immediately."
-        self._cart_queue.transition()
-        self._state = self.STATE_STOPPED
-        self._button_text.set(TEXT_BUTTON_STOPPED)
-        self._button.config(bg=COLOR_BUTTON_STOPPED, highlightbackground=COLOR_BUTTON_STOPPED)
+        if self._state is STATE_STOPPED:
+            print "Starting Automation..."
+            self._cart_queue.start()
+            self._state = STATE_PLAYING
+        elif self._state is STATE_PLAYING:
+            print "Stopping Automation after this track..."
+            self._cart_queue.stop_soft()
+            self._state = STATE_STOPPING
+        elif self._state is STATE_STOPPING:
+            print "Stopping Automation immediately."
+            self._cart_queue.transition()
+            self._state = STATE_STOPPED
+        self._update_ui()
 
     def _cart_start(self):
         """Start the meter when a cart starts."""
         self._meter.start()
+        self._update_ui()
 
     def _cart_stop(self):
-        """Reset the meter when a cart stops."""
+        """Reset the meter when a cart stops.
+
+        Also, if a soft stop occured, update the button state.
+        """
         self._meter.reset()
 
+        if self._state is STATE_STOPPING:
+            self._state = STATE_STOPPED
+            self._update_ui()
+
     def _update_ui(self):
-        """Update the user interface.
+        """Update the button and playlist."""
+        self._button_text.set(TEXT_BUTTON[self._state])
+        self._button.config(bg=COLOR_BUTTON[self._state], highlightbackground=COLOR_BUTTON[self._state])
 
-        This function is called when the cart queue is updated.
-        """
-
-        # clear and reset the playlist
         self._list_time.delete(0, Tkinter.END)
         self._list_track.delete(0, Tkinter.END)
         self._list_artist.delete(0, Tkinter.END)
@@ -161,12 +153,6 @@ class Automation(Frame):
             self._list_time.insert(Tkinter.END, cart.start_time.strftime("%I:%M:%S %p"))
             self._list_track.insert(Tkinter.END, cart.title)
             self._list_artist.insert(Tkinter.END, cart.issuer)
-
-        # HACK: update the button state if a soft stop occured
-        if self._state is self.STATE_STOPPING:
-            self._state = self.STATE_STOPPED
-            self._button_text.set(TEXT_BUTTON_STOPPED)
-            self._button.config(bg=COLOR_BUTTON_STOPPED, highlightbackground=COLOR_BUTTON_STOPPED)
 
     def _get_meter_data(self):
         """Get meter data for the first track in the queue."""

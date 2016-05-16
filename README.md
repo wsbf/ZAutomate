@@ -19,15 +19,14 @@ pylint **/*.py > lint.log
 
 ## TODO
 
-- consider making a Grid class
-- implement zautomate_log.php in the new API
 - move colors, fonts, text values to constants
-- add hourly reload to Cart Machine
 - analyze the insertion/removal of carts, thread management during Automation
+- implement zautomate_log.php in the new API
 - separate Logbook_Log into log_cart and log_track
 - create separate classes for carts and tracks
-- resolve lint errors
 - clean up print statements, use `logging` module
+- resolve lint errors
+- add hourly reload to Cart Machine
 - Automation stops playing PSAs after a long time?
 - Large queries in DJ Studio interrupt audio streaming (use multiprocess)
 - Consider combining the three modules into one window
