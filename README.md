@@ -21,11 +21,9 @@ pylint **/*.py > lint.log
 
 - move colors, fonts, text values to constants
 - analyze the insertion/removal of carts, thread management during Automation
-- implement zautomate_log.php in the new API
 - separate Logbook_Log into log_cart and log_track
 - create separate classes for carts and tracks
 - clean up print statements, use `logging` module
-- resolve lint errors
 - add hourly reload to Cart Machine
 - Automation stops playing PSAs after a long time?
 - Large queries in DJ Studio interrupt audio streaming (use multiprocess)

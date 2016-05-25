@@ -10,7 +10,8 @@ URL_AUTOLOAD = "https://dev.wsbf.net/api/zautomate/automation_generate_showplist
 URL_AUTOSTART = "https://dev.wsbf.net/api/zautomate/automation_generate_showid.php"
 URL_AUTOCART = "https://dev.wsbf.net/api/zautomate/automation_add_carts.php"
 URL_STUDIOSEARCH = "https://dev.wsbf.net/api/zautomate/studio_search.php"
-URL_LOG = "https://dev.wsbf.net/api/zautomate/zautomate_log.php"
+URL_LOG_CART = "https://dev.wsbf.net/api/zautomate/log_cart.php"
+URL_LOG_TRACK = "https://dev.wsbf.net/api/zautomate/log_track.php"
 
 def get_new_show_id(show_id):
     """Get a new show ID for queueing playlists.
@@ -76,9 +77,9 @@ def get_playlist(show_id):
 
     try:
         res = requests.get(URL_AUTOLOAD, params={"showid": show_id})
-        show_res = res.json()
+        playlist_res = res.json()
 
-        for track_res in show_res["playlist"]:
+        for track_res in playlist_res:
             # TODO: move pathname building to Track constructor
             filename = LIBRARY_PREFIX + track_res["file_name"]
             track_id = track_res["lb_album_code"] + "-" + track_res["lb_track_num"]
@@ -156,7 +157,13 @@ def log_cart(cart_id):
     :param cart_id: cart ID, or [album_code]-[track_num] for a track
     """
     try:
-        res = requests.post(URL_LOG, params={"cartid": cart_id})
+        if cart_id.isdigit():
+            res = requests.post(URL_LOG_CART, params={"cartid": cart_id})
+        else:
+            album_code = cart_id.split("-")[0]
+            disc_num = 1
+            track_num = cart_id.split("-")[1]
+            res = requests.post(URL_LOG_TRACK, params={"album_code": album_code, "disc_num": disc_num, "track_num": track_num})
         print res.text
     except requests.exceptions.ConnectionError:
         print time.asctime() + " :=: Caught error: Could not access cart logger."

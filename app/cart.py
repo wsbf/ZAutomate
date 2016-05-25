@@ -33,8 +33,8 @@ class Cart(object):
         self.issuer = issuer
         self.cart_type = cart_type
 
-        # TODO: mock ZAutoLib in development
-        filename = "test/test.mp3"
+        # uncomment to mock ZAutoLib in development
+        # filename = "test/test.mp3"
 
         try:
             self._player = Player(filename)
