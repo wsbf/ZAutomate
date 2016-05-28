@@ -160,10 +160,10 @@ def log_cart(cart_id):
         if cart_id.isdigit():
             res = requests.post(URL_LOG_CART, params={"cartid": cart_id})
         else:
-            album_code = cart_id.split("-")[0]
+            album_id = cart_id.split("-")[0]
             disc_num = 1
             track_num = cart_id.split("-")[1]
-            res = requests.post(URL_LOG_TRACK, params={"album_code": album_code, "disc_num": disc_num, "track_num": track_num})
+            res = requests.post(URL_LOG_TRACK, params={"albumID": album_id, "disc_num": disc_num, "track_num": track_num})
         print res.text
     except requests.exceptions.ConnectionError:
         print time.asctime() + " :=: Caught error: Could not access cart logger."
