@@ -28,10 +28,14 @@ class Cart(object):
         :param cart_type: cart type
         :param filename: location of the cart file
         """
+        print cart_id
+
         self.cart_id = cart_id
-        self.title = title
-        self.issuer = issuer
-        self.cart_type = cart_type
+        self.title = title.encode("ascii", "ignore")
+        self.issuer = issuer.encode("ascii", "ignore")
+        self.cart_type = cart_type.encode("ascii", "ignore")
+
+        filename = filename.encode("ascii", "ignore")
 
         # uncomment to mock ZAutoLib in development
         # filename = "test/test.mp3"
