@@ -28,8 +28,6 @@ class Cart(object):
         :param cart_type: cart type
         :param filename: location of the cart file
         """
-        print cart_id
-
         self.cart_id = cart_id
         self.title = title.encode("ascii", "ignore")
         self.issuer = issuer.encode("ascii", "ignore")

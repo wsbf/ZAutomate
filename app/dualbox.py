@@ -6,6 +6,9 @@
 import Tkinter
 from Tkinter import Frame, Scrollbar, Label, Listbox
 
+TEXT_LABEL1 = "Track"
+TEXT_LABEL2 = "Artist"
+
 class DualBox(Frame):
     """The DualBox class is a pair of Listboxes that has a list of carts."""
     _prev_index = None
@@ -19,26 +22,26 @@ class DualBox(Frame):
 
         :param parent
         """
-        Frame.__init__(self, bg='#33CCCC')
+        Frame.__init__(self)
         self._select_callback = parent.select_cart
 
         # make scroll bar
-        scroll_bar = Scrollbar(self, orient="vertical", command=self._scroll_bar)
+        scroll_bar = Scrollbar(self, orient=Tkinter.VERTICAL, command=self._scroll_bar)
 
-        label1 = Label(self, text='Track', bg='#33CCCC', fg='#000')
-        label2 = Label(self, text='Artist', bg='#33CCCC', fg='#000')
+        label1 = Label(self, text=TEXT_LABEL1)
+        label2 = Label(self, text=TEXT_LABEL2)
 
         # make two scroll boxes
-        self._list_box1 = Listbox(self, yscrollcommand=scroll_bar.set, exportselection=0, width=40, bg='#000', fg='#33CCCC')
-        self._list_box2 = Listbox(self, yscrollcommand=scroll_bar.set, exportselection=0, width=40, bg='#000', fg='#33CCCC')
+        self._list_box1 = Listbox(self, yscrollcommand=scroll_bar.set, exportselection=0, width=40)
+        self._list_box2 = Listbox(self, yscrollcommand=scroll_bar.set, exportselection=0, width=40)
 
         # fill the whole screen - pack!
-        scroll_bar.pack(side="right", fill="y")
+        scroll_bar.pack(side=Tkinter.RIGHT, fill=Tkinter.Y)
 
-        label1.pack(side='left', fill='x', expand=True)
-        self._list_box1.pack(side="left", fill="x", expand=True, padx=5, pady=5)
-        self._list_box2.pack(side="left", fill="x", expand=True, padx=5, pady=5)
-        label2.pack(side='left', fill='x', expand=True)
+        label1.pack(side=Tkinter.LEFT, fill=Tkinter.X, expand=True)
+        self._list_box1.pack(side=Tkinter.LEFT, fill=Tkinter.X, expand=True, padx=5, pady=5)
+        self._list_box2.pack(side=Tkinter.LEFT, fill=Tkinter.X, expand=True, padx=5, pady=5)
+        label2.pack(side=Tkinter.LEFT, fill=Tkinter.X, expand=True)
 
         # mouse wheel binding
         self._list_box1.bind("<MouseWheel>", self._scroll_wheel)

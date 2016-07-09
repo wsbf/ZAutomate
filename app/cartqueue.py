@@ -49,7 +49,7 @@ AUTOMATION_CARTS = [
 
 PLAYLIST_MIN_LENGTH = 10
 
-def is_artist_is_list(cart, array):
+def is_artist_in_list(cart, array):
     """Get whether the artist of a cart is in a list of carts.
 
     :param cart
@@ -162,7 +162,7 @@ class CartQueue(object):
             playlist = database.get_playlist(self._show_id)
 
             # add each track whose artist isn't already in the queue or played list
-            self._queue.extend([t for t in playlist if not is_artist_is_list(t, self._played) and not is_artist_is_list(t, self._queue)])
+            self._queue.extend([t for t in playlist if not is_artist_in_list(t, self._played) and not is_artist_in_list(t, self._queue)])
 
             print time.asctime() + " :=: CartQueue :: Added tracks, length is " + (str)(len(self._queue))
 

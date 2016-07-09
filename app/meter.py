@@ -46,7 +46,7 @@ class Meter(Canvas):
         :param data_callback: function to retrieve meter data
         :param end_callback: function to call upon completion
         """
-        Canvas.__init__(self, master, bg=COLOR_METER_BG, borderwidth="2", relief="groove", width=width, height=METER_HEIGHT)
+        Canvas.__init__(self, master, bg=COLOR_METER_BG, borderwidth=2, relief=Tkinter.GROOVE, width=width, height=METER_HEIGHT)
 
         self._data_callback = data_callback
 

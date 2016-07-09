@@ -36,13 +36,11 @@ CONFIG_CARTS = {
     }
 }
 
-FONT_TITLE = ('Helvetica', 36, 'bold italic')
-FONT_RELOAD = ('Helvetica', 24, 'bold')
-
-COLOR_TITLE_BG = "#DDDDDD"
-COLOR_TITLE_FG = "#000000"
 COLOR_RELOAD_BG = "#FF0000"
 COLOR_RELOAD_FG = "#000000"
+
+FONT_TITLE = ('Helvetica', 36, 'bold italic')
+FONT_RELOAD = ('Helvetica', 24, 'bold')
 
 TEXT_TITLE = "ZAutomate :: Cart Machine"
 TEXT_RELOAD = "Reload"
@@ -134,9 +132,7 @@ class CartMachine(Frame):
                 self.columnconfigure(col, weight=1)
 
         # initialize the title
-        title = Label(self.master, \
-            bg=COLOR_TITLE_BG, fg=COLOR_TITLE_FG, \
-            font=FONT_TITLE, text=TEXT_TITLE)
+        title = Label(self.master, font=FONT_TITLE, text=TEXT_TITLE)
         title.grid(row=0, column=0, columnspan=GRID_COLS - 1, sticky=Tkinter.N)
 
         # initialize the reload button

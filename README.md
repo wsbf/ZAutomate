@@ -16,8 +16,7 @@ Ubuntu:
 
 ## TODO
 
-- move colors, fonts, text values to constants
-- review cart_queue for design flaws, possible infinite loop?
+- review cartqueue for design flaws, possible infinite loop?
 - separate Logbook_Log into log_cart and log_track
 - create separate classes for carts and tracks
 - clean up print statements, use `logging` module

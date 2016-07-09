@@ -49,7 +49,7 @@ class Automation(Frame):
         Frame.__init__(self)
 
         # initialize title
-        title = Label(self.master, fg='#000', font=FONT_TITLE, text=TEXT_TITLE)
+        title = Label(self.master, font=FONT_TITLE, text=TEXT_TITLE)
         title.grid(row=0, column=0, columnspan=3)
 
         # initialize button and state
@@ -72,15 +72,15 @@ class Automation(Frame):
         Label(playlist, font=FONT, anchor=Tkinter.CENTER, width=32, text=TEXT_PLAYLIST_ARTIST).grid(row=0, column=2)
 
         inner_playlist = Frame(playlist)
-        scroll = Scrollbar(inner_playlist, orient="vertical", command=self._scroll_playlist)
-        self._list_time = Listbox(inner_playlist, selectmode='single', yscrollcommand=scroll.set, exportselection=0, width=16, height=20)
-        self._list_track = Listbox(inner_playlist, selectmode='single', yscrollcommand=scroll.set, exportselection=0, width=32, height=20)
-        self._list_artist = Listbox(inner_playlist, selectmode='single', yscrollcommand=scroll.set, exportselection=0, width=32, height=20)
+        scroll = Scrollbar(inner_playlist, orient=Tkinter.VERTICAL, command=self._scroll_playlist)
+        self._list_time = Listbox(inner_playlist, selectmode=Tkinter.SINGLE, yscrollcommand=scroll.set, exportselection=0, width=16, height=20)
+        self._list_track = Listbox(inner_playlist, selectmode=Tkinter.SINGLE, yscrollcommand=scroll.set, exportselection=0, width=32, height=20)
+        self._list_artist = Listbox(inner_playlist, selectmode=Tkinter.SINGLE, yscrollcommand=scroll.set, exportselection=0, width=32, height=20)
 
-        scroll.pack(side="right", fill="y")
-        self._list_time.pack(side="left", fill="x", expand=True, padx=2, pady=2)
-        self._list_track.pack(side="left", fill="x", expand=True, padx=2, pady=2)
-        self._list_artist.pack(side="left", fill="x", expand=True, padx=2, pady=2)
+        scroll.pack(side=Tkinter.RIGHT, fill=Tkinter.Y)
+        self._list_time.pack(side=Tkinter.LEFT, fill=Tkinter.X, expand=True, padx=2, pady=2)
+        self._list_track.pack(side=Tkinter.LEFT, fill=Tkinter.X, expand=True, padx=2, pady=2)
+        self._list_artist.pack(side=Tkinter.LEFT, fill=Tkinter.X, expand=True, padx=2, pady=2)
 
         inner_playlist.grid(row=1, column=0, columnspan=3)
         playlist.grid(row=4, column=0, columnspan=4)

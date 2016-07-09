@@ -71,7 +71,7 @@ class Studio(Frame):
                 self.columnconfigure(col, weight=1)
 
         # initialize the title
-        title = Label(self.master, fg='#000', font=FONT_TITLE, text=TEXT_TITLE)
+        title = Label(self.master, font=FONT_TITLE, text=TEXT_TITLE)
         title.grid(row=0, column=0, columnspan=GRID_COLS)
 
         # initialize the meter
@@ -95,9 +95,9 @@ class Studio(Frame):
         control.grid(row=GRID_ROWS + 2, column=4, columnspan=GRID_COLS - 4)
 
         # initialize the search box, button
-        Label(control, font=FONT, fg='#000', text=TEXT_SEARCHBOX).pack(anchor=Tkinter.NW)
-        self._entry = Entry(control, takefocus=True, width=45, bg='#000', fg='#33CCCC')
-        self._entry.bind('<Return>', self.search)
+        Label(control, font=FONT, text=TEXT_SEARCHBOX).pack(anchor=Tkinter.NW)
+        self._entry = Entry(control, takefocus=True, width=45)
+        self._entry.bind("<Return>", self.search)
         # self._entry.grid(row=GRID_ROWS + 3, column=0, columnspan=5)
         self._entry.pack(anchor=Tkinter.NW)
         self._entry.focus_set()
