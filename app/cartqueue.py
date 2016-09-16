@@ -190,8 +190,8 @@ class CartQueue(object):
         target = datetime.datetime.now().replace(minute=minute, second=0, microsecond=0)
         target_delta = datetime.timedelta(seconds=max_delta)
 
-        # don't insert if the target window has already passed this hour
-        if target + target_delta < datetime.datetime.now():
+        # don't insert if the target minute has already passed this hour
+        if target < datetime.datetime.now():
             return
 
         # don't insert if the queue has not reached the target window
