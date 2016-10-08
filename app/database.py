@@ -5,13 +5,13 @@ from cart import Cart
 
 LIBRARY_PREFIX = "/media/ZAL/"
 
-URL_CARTLOAD = "https://dev.wsbf.net/api/zautomate/cartmachine_load.php"
-URL_AUTOLOAD = "https://dev.wsbf.net/api/zautomate/automation_generate_showplist.php"
-URL_AUTOSTART = "https://dev.wsbf.net/api/zautomate/automation_generate_showid.php"
-URL_AUTOCART = "https://dev.wsbf.net/api/zautomate/automation_add_carts.php"
-URL_STUDIOSEARCH = "https://dev.wsbf.net/api/zautomate/studio_search.php"
-URL_LOG_CART = "https://dev.wsbf.net/api/zautomate/log_cart.php"
-URL_LOG_TRACK = "https://dev.wsbf.net/api/zautomate/log_track.php"
+URL_CARTLOAD = "https://wsbf.net/api/zautomate/cartmachine_load.php"
+URL_AUTOLOAD = "https://wsbf.net/api/zautomate/automation_generate_showplist.php"
+URL_AUTOSTART = "https://wsbf.net/api/zautomate/automation_generate_showid.php"
+URL_AUTOCART = "https://wsbf.net/api/zautomate/automation_add_carts.php"
+URL_STUDIOSEARCH = "https://wsbf.net/api/zautomate/studio_search.php"
+URL_LOG_CART = "https://wsbf.net/api/zautomate/log_cart.php"
+URL_LOG_TRACK = "https://wsbf.net/api/zautomate/log_track.php"
 
 def get_new_show_id(show_id):
     """Get a new show ID for queueing playlists.
