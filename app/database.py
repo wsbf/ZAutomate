@@ -3,7 +3,7 @@ import time
 import requests
 from cart import Cart
 
-LIBRARY_PREFIX = "/media/ZAL/"
+LIBRARY_PREFIX = "/media/ZAutoLib/"
 
 URL_CARTLOAD = "https://wsbf.net/api/zautomate/cartmachine_load.php"
 URL_AUTOLOAD = "https://wsbf.net/api/zautomate/automation_generate_showplist.php"
