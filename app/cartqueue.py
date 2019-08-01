@@ -22,28 +22,28 @@ CART_TYPES = [
 AUTOMATION_CARTS = [
     {
         "type": "StationID",
-        "minute": 0,
-        "max_delta": 300
+        "minute": 5,
+        "max_delta": 6000
     },
     {
-        "type": "PSA",
+        "type": "StationID",
         "minute": 15,
-        "max_delta": 300
+        "max_delta": 6000
     },
     {
         "type": "StationID",
         "minute": 30,
-        "max_delta": 300
+        "max_delta": 6000
     },
     {
-        "type": "Underwriting",
+        "type": "StationID",
         "minute": 30,
-        "max_delta": 300
+        "max_delta": 6000
     },
     {
-        "type": "PSA",
+        "type": "StationID",
         "minute": 45,
-        "max_delta": 300
+        "max_delta": 6000
     }
 ]
 
@@ -178,9 +178,9 @@ class CartQueue(object):
             self._insert_cart(entry["type"], entry["minute"], entry["max_delta"])
 
     def _insert_cart(self, cart_type, minute, max_delta):
-        """Insert carts into the current hour according to a config entry.
+        """Insert a cart into the current hour according to a config entry.
 
-        This function inserts carts as close as possible to the target
+        This function inserts a cart as close as possible to the target
         start time, even if the target window is not met.
 
         :param cart_type
@@ -201,6 +201,13 @@ class CartQueue(object):
         if last.start_time + last_length < target - target_delta:
             return
 
+        # don't insert if there are no carts of this type
+        cart = database.get_cart(cart_type)
+
+        if cart is None:
+                print time.asctime() + " :=: CartQueue :: Could not find cart of type " + cart_type
+                return
+
         print time.asctime() + " :=: CartQueue :: Target insert time is " + (str)(target)
 
         # find the position in queue with the closest start time to target
@@ -220,13 +227,11 @@ class CartQueue(object):
         print time.asctime() + " :=: CartQueue :: min_delta is " + (str)(min_delta)
 
         if min_delta.seconds <= max_delta:
-            print time.asctime() + " :=: CartQueue :: Carts inserted within target window"
+            print time.asctime() + " :=: CartQueue :: Cart inserted within target window"
         else:
-            print time.asctime() + " :=: CartQueue :: Carts not inserted within target window"
+            print time.asctime() + " :=: CartQueue :: Cart not inserted within target window"
 
         # insert cart into the queue
-        cart = database.get_cart(cart_type)
-
         self._queue.insert(min_index, cart)
         self._gen_start_times(min_index)
 
