@@ -25,9 +25,19 @@ AUTOMATION_CARTS = [
         "minute": 0,
         "max_delta": 6000
     },
+     {
+        "type": "PSA",
+        "minute": 15,
+        "max_delta": 6000
+    },
     {
         "type": "Underwriting",
         "minute": 30,
+        "max_delta": 6000
+    },
+     {
+        "type": "PSA",
+        "minute": 45,
         "max_delta": 6000
     }
 ]
