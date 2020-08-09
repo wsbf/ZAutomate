@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """The Studio module provides a GUI for the digital library."""
-import thread
+import multiprocessing as mp
 import Tkinter
 from Tkinter import Frame, Label, BooleanVar, Checkbutton, Entry, Button
 import database
@@ -124,11 +124,8 @@ class Studio(Frame):
             print "Found %d results." % len(self._search_results)
 
     def search(self, *args):
-        """Search the digital library.
-
-        :param args
-        """
-        thread.start_new_thread(self._search_internal, ())
+        """Search the digital library."""
+        mp.Process(target=self._search_internal).start()
 
     def select_cart(self, index):
         """Select a cart from the search results.

@@ -1,5 +1,5 @@
 """The meter module provides the Meter class."""
-import thread
+import multiprocessing as mp
 import time
 import Tkinter
 from Tkinter import Canvas
@@ -104,7 +104,7 @@ class Meter(Canvas):
     def start(self):
         """Start the meter."""
         self._is_playing = True
-        thread.start_new_thread(self._run, ())
+        mp.Process(target=self._run).start()
 
     def reset(self):
         """Reset the meter."""

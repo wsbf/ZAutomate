@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 """Test suite for the meter module."""
+import multiprocessing as mp
 import sys
 import time
-import thread
 from Tkinter import Frame, Canvas
 
 sys.path.insert(0, 'app')
@@ -33,7 +33,7 @@ class Test(Frame):
         Canvas(self.master, width=900, height=100, bg='#00F').grid(row=2, column=0, columnspan=NUM_COLS)
 
         self._meter.start()
-        thread.start_new_thread(self._run, ())
+        mp.Process(target=self._run).start()
 
         self.master.title("Testing Program")
         self.master.mainloop()

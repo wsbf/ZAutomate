@@ -4,10 +4,10 @@ This implementation of Player uses VLC in a separate process, although
 it also uses libmad to retreive the length of the file. This implementation
 seems to work, although it prints cryptic messages from time to time.
 """
+import multiprocessing as mp
 import os
 import signal
 import subprocess
-import thread
 import time
 
 import mad
@@ -68,7 +68,7 @@ class Player(object):
         self._pid = subprocess.Popen(self._command).pid
         self._is_playing = True
         self._callback = callback
-        thread.start_new_thread(self._play_internal, ())
+        mp.Process(target=self._play_internal).start()
 
     def stop(self):
         """Stop the audio stream."""

@@ -3,7 +3,7 @@
 This implementation of Player uses python wrappers for libmad and libao,
 which provide interfaces to audio files and audio devices.
 """
-import thread
+import multiprocessing as mp
 import time
 import ao
 import mad
@@ -67,7 +67,7 @@ class Player(object):
 
         self._is_playing = True
         self._callback = callback
-        thread.start_new_thread(self._play_internal, ())
+        mp.Process(target=self._play_internal).start()
 
     def stop(self):
         """Stop the audio stream."""
